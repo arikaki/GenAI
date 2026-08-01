@@ -1,0 +1,346 @@
+/* ============================================================
+   Two ways to make an image
+   Instrument-panel layout: two channels, one calibrated control.
+   No web fonts — the bundle must open offline from a folder.
+   ============================================================ */
+
+:root{
+  --ground:#E6EAEE;
+  --panel:#F7F9FB;
+  --ink:#101720;
+  --muted:#59646F;
+  --rule:#C6CDD5;
+  --plate:#090D12;
+
+  --vae:#B4436C;          /* channel A — rose   */
+  --dif:#16808E;          /* channel B — teal   */
+
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+
+  --gutter:clamp(1rem,4vw,3rem);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--sans);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ─── masthead ─────────────────────────────────────────── */
+
+.masthead{
+  padding:clamp(2.5rem,7vw,5rem) var(--gutter) clamp(1.5rem,4vw,2.5rem);
+  max-width:70rem;margin-inline:auto;
+}
+
+.eyebrow{
+  margin:0 0 1.25rem;
+  font-family:var(--mono);
+  font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);
+}
+
+.masthead h1{
+  margin:0 0 1rem;
+  font-size:clamp(2.2rem,6.5vw,4.25rem);
+  font-weight:760;
+  letter-spacing:-.035em;
+  line-height:.98;
+}
+.masthead h1 em{font-style:normal;color:var(--vae)}
+
+.standfirst{
+  margin:0;max-width:44rem;
+  font-size:clamp(1rem,1.6vw,1.13rem);
+  color:var(--muted);
+}
+.standfirst strong{color:var(--ink);font-weight:640}
+
+/* ─── the bench: two channels ──────────────────────────── */
+
+.bench{
+  max-width:70rem;margin-inline:auto;
+  padding:0 var(--gutter);
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2.5vw,1.75rem);
+  align-items:start;
+}
+
+.channel{
+  background:var(--panel);
+  border:1px solid var(--rule);
+  border-top:3px solid var(--chan);
+  border-radius:3px;
+  padding:clamp(1rem,2vw,1.5rem);
+  display:flex;flex-direction:column;gap:1rem;
+}
+.channel--vae{--chan:var(--vae)}
+.channel--dif{--chan:var(--dif)}
+
+.channel__head{display:flex;flex-direction:column;gap:.3rem}
+
+.channel__tag{
+  font-family:var(--mono);
+  font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--chan);
+}
+
+.channel__name{
+  margin:0;font-size:clamp(1rem,2vw,1.22rem);
+  font-weight:660;letter-spacing:-.015em;
+}
+
+/* the dark specimen plate */
+.plate{
+  background:var(--plate);
+  border-radius:2px;
+  display:grid;place-items:center;
+  padding:clamp(.75rem,2vw,1.25rem);
+}
+.plate canvas{
+  width:100%;max-width:280px;height:auto;
+  image-rendering:pixelated;
+  display:block;
+}
+
+/* small instrument readouts (latent map / schedule curve) */
+.instrument{display:flex;flex-direction:column;gap:.4rem}
+
+.instrument__label{
+  font-family:var(--mono);
+  font-size:.66rem;letter-spacing:.05em;
+  color:var(--muted);
+}
+
+.map{
+  background:#fff;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  padding:.4rem;
+}
+/* the latent map is a reference, not the specimen — keep it small */
+.map canvas{width:100%;height:auto;display:block;margin-inline:auto}
+.map--square canvas{max-width:190px}
+
+/* numeric readout strip */
+.readout{
+  margin:0;display:flex;gap:1.5rem;flex-wrap:wrap;
+  padding-top:.75rem;border-top:1px solid var(--rule);
+}
+.readout div{display:flex;flex-direction:column;gap:.15rem}
+.readout dt{
+  font-family:var(--mono);
+  font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);
+}
+.readout dd{margin:0}
+
+.num{
+  font-family:var(--mono);
+  font-size:.94rem;font-weight:600;
+  font-variant-numeric:tabular-nums;
+  color:var(--chan,var(--ink));
+}
+
+.channel__note{
+  margin:0;font-size:.87rem;color:var(--muted);
+}
+.channel__note em{color:var(--ink);font-style:italic}
+
+/* ─── view toggle (I4) ─────────────────────────────────── */
+
+.views{display:grid;grid-template-columns:repeat(3,1fr);gap:.35rem}
+
+.view{
+  appearance:none;cursor:pointer;
+  background:#fff;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  padding:.5rem .3rem;
+  display:flex;flex-direction:column;align-items:center;gap:.2rem;
+  font-family:var(--sans);color:var(--muted);
+  transition:background .12s ease,border-color .12s ease,color .12s ease;
+}
+.view:hover{border-color:var(--dif);color:var(--ink)}
+.view:focus-visible{outline:2px solid var(--dif);outline-offset:2px}
+
+.view.is-active{
+  background:var(--dif);border-color:var(--dif);color:#fff;
+}
+
+.view__sym{font-family:var(--mono);font-size:.95rem;font-weight:640}
+.view__txt{font-size:.62rem;letter-spacing:.02em;text-align:center;line-height:1.2}
+
+/* ─── the shared control — signature element ───────────── */
+
+.control{
+  max-width:70rem;margin:clamp(1.5rem,4vw,2.5rem) auto 0;
+  padding:0 var(--gutter);
+}
+
+.control__frame{
+  background:var(--ink);
+  border-radius:3px;
+  padding:clamp(1rem,2.5vw,1.5rem) clamp(1rem,3vw,2rem) clamp(.85rem,2vw,1.15rem);
+}
+
+.control__ends{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--mono);
+  font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
+  color:#7C8996;
+  margin-bottom:.6rem;
+}
+.control__title{color:#B7C2CC;letter-spacing:.1em}
+
+.ticks{width:100%;height:14px;display:block;opacity:.55}
+
+#scrub{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:34px;margin:.1rem 0 0;
+  background:transparent;cursor:grab;display:block;
+}
+#scrub:active{cursor:grabbing}
+
+#scrub::-webkit-slider-runnable-track{
+  height:3px;background:#39434E;border-radius:2px;
+}
+#scrub::-moz-range-track{height:3px;background:#39434E;border-radius:2px}
+
+#scrub::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:16px;height:26px;margin-top:-11.5px;
+  border-radius:2px;
+  background:linear-gradient(180deg,var(--vae) 0 50%,var(--dif) 50% 100%);
+  border:1px solid #0A0F14;
+}
+#scrub::-moz-range-thumb{
+  width:16px;height:26px;border-radius:2px;border:1px solid #0A0F14;
+  background:linear-gradient(180deg,var(--vae) 0 50%,var(--dif) 50% 100%);
+}
+#scrub:focus-visible{outline:2px solid #fff;outline-offset:4px}
+
+.control__pos{text-align:center;margin-top:.2rem}
+.control__pos .num{color:#B7C2CC;font-size:.72rem;letter-spacing:.06em}
+
+/* the tell — what just happened, one line per channel */
+.tell{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2.5vw,1.75rem);
+  margin-top:1rem;
+}
+.tell__row{display:flex;gap:.6rem;align-items:flex-start}
+.tell__row p{margin:0;font-size:.87rem;color:var(--muted)}
+.tell__row strong{color:var(--ink);font-weight:640}
+
+.tell__key{
+  flex:none;width:1.35rem;height:1.35rem;border-radius:2px;
+  display:grid;place-items:center;
+  font-family:var(--mono);font-size:.7rem;font-weight:700;color:#fff;
+}
+.tell__key--vae{background:var(--vae)}
+.tell__key--dif{background:var(--dif)}
+
+/* ─── I2 · where the randomness lives ──────────────────── */
+
+.compare{
+  max-width:70rem;margin:clamp(2.5rem,6vw,4rem) auto 0;
+  padding:0 var(--gutter);
+}
+
+.compare__head{margin-bottom:1.5rem;max-width:44rem}
+.compare__head h2{
+  margin:0 0 .6rem;
+  font-size:clamp(1.5rem,3.5vw,2.1rem);
+  font-weight:720;letter-spacing:-.025em;line-height:1.05;
+}
+
+.compare__grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(1rem,2.5vw,1.75rem);align-items:start;
+}
+
+.cmp{
+  background:var(--panel);
+  border:1px solid var(--rule);
+  border-left:3px solid var(--chan);
+  border-radius:3px;
+  padding:clamp(1rem,2vw,1.35rem);
+  display:flex;flex-direction:column;gap:.9rem;
+}
+.cmp--vae{--chan:var(--vae)}
+.cmp--dif{--chan:var(--dif)}
+
+.cmp__title{
+  margin:0;font-size:.97rem;font-weight:660;letter-spacing:-.01em;
+  display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;
+}
+.cmp__t{font-size:.8rem;color:var(--chan)}
+
+.strip{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:.3rem;
+  background:var(--plate);border-radius:2px;padding:.5rem;
+}
+.strip--3{grid-template-columns:repeat(3,1fr);gap:.5rem}
+
+.strip figure{margin:0;display:flex;flex-direction:column;gap:.3rem;align-items:center}
+.strip canvas{width:100%;height:auto;display:block;image-rendering:pixelated}
+.strip figcaption{
+  font-family:var(--mono);font-size:.55rem;letter-spacing:.04em;
+  color:#7C8996;text-align:center;
+}
+
+.ghost{
+  appearance:none;cursor:pointer;align-self:flex-start;
+  background:transparent;border:1px solid var(--rule);border-radius:2px;
+  padding:.4rem .8rem;
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;
+  color:var(--muted);
+  transition:border-color .12s ease,color .12s ease;
+}
+.ghost:hover{border-color:var(--vae);color:var(--vae)}
+.ghost:focus-visible{outline:2px solid var(--vae);outline-offset:2px}
+
+.cmp__note{margin:0;font-size:.85rem;color:var(--muted)}
+.cmp__note em{color:var(--ink);font-style:italic}
+
+/* ─── foot ─────────────────────────────────────────────── */
+
+.foot{
+  max-width:70rem;margin:clamp(2rem,5vw,3.5rem) auto 0;
+  padding:1.25rem var(--gutter) 3rem;
+}
+.foot p{
+  margin:0;padding-top:1.25rem;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.03em;color:var(--muted);
+}
+
+/* ─── loading veil ─────────────────────────────────────── */
+
+.loading{
+  position:fixed;inset:0;background:var(--ground);
+  display:grid;place-items:center;z-index:20;
+  font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);
+  transition:opacity .3s ease;
+}
+.loading.is-gone{opacity:0;pointer-events:none}
+.loading.is-error{color:var(--vae);text-transform:none;letter-spacing:0;
+  padding:2rem;text-align:center;line-height:1.6}
+
+/* ─── responsive ───────────────────────────────────────── */
+
+@media (max-width:760px){
+  .bench,.compare__grid{grid-template-columns:1fr}
+  .tell{grid-template-columns:1fr;gap:.6rem}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+}

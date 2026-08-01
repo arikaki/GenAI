@@ -1,0 +1,1 @@
+{"T": 200, "seeds": 3, "tile": 32, "note": "rows = seed, cols = timestep, ordered t = T-1 down to 0"}
