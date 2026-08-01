@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two ways to make an image — VAE and diffusion, side by side</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <p class="eyebrow">One control · two model families</p>
+  <h1>Two ways to<br><em>make an image</em></h1>
+  <p class="standfirst">
+    Both panels below are driven by the <strong>same slider</strong>. Watch what each one does as
+    you move it — the difference in how they move is the whole point.
+  </p>
+</header>
+
+<main class="bench">
+
+  <!-- ─────────── CHANNEL A · VAE ─────────── -->
+  <section class="channel channel--vae" aria-labelledby="ch-a-title">
+    <div class="channel__head">
+      <span class="channel__tag">Channel A</span>
+      <h2 class="channel__name" id="ch-a-title">Variational autoencoder</h2>
+    </div>
+
+    <div class="plate">
+      <canvas id="vaeImage" width="280" height="280"
+              aria-label="Image decoded from the current latent position"></canvas>
+    </div>
+
+    <div class="instrument">
+      <div class="instrument__label">Latent space — every image lives on this plane</div>
+      <div class="map map--square">
+        <canvas id="vaeMap" width="240" height="240"
+                aria-label="Two dimensional latent space with current position marked"></canvas>
+      </div>
+    </div>
+
+    <dl class="readout">
+      <div><dt>position</dt><dd id="vaeZ" class="num">z = (0.00, 0.00)</dd></div>
+      <div><dt>dimensions</dt><dd class="num">2</dd></div>
+    </dl>
+
+    <p class="channel__note">
+      Two numbers are enough to say <em>which</em> image. The encoder learned to squeeze
+      784 pixels down to this plane.
+    </p>
+  </section>
+
+  <!-- ─────────── CHANNEL B · DIFFUSION ─────────── -->
+  <section class="channel channel--dif" aria-labelledby="ch-b-title">
+    <div class="channel__head">
+      <span class="channel__tag">Channel B</span>
+      <h2 class="channel__name" id="ch-b-title">Diffusion model</h2>
+    </div>
+
+    <div class="plate">
+      <canvas id="difImage" width="280" height="280"
+              aria-label="Diffusion model state at the current timestep"></canvas>
+    </div>
+
+    <div class="views" role="group" aria-label="Choose what to display">
+      <button class="view is-active" data-view="reverse">
+        <span class="view__sym">x<sub>t</sub></span><span class="view__txt">noisy image</span>
+      </button>
+      <button class="view" data-view="eps">
+        <span class="view__sym">&epsilon;&#770;</span><span class="view__txt">predicted noise</span>
+      </button>
+      <button class="view" data-view="x0">
+        <span class="view__sym">x&#770;<sub>0</sub></span><span class="view__txt">implied clean image</span>
+      </button>
+    </div>
+
+    <div class="instrument">
+      <div class="instrument__label">Noise schedule — signal remaining, &alpha;&#772;<sub>t</sub> (rises toward the image)</div>
+      <div class="map">
+        <canvas id="difSched" width="480" height="200"
+                aria-label="Alpha-bar schedule curve with current timestep marked"></canvas>
+      </div>
+    </div>
+
+    <dl class="readout">
+      <div><dt>timestep</dt><dd id="difT" class="num">t = 199</dd></div>
+      <div><dt>dimensions</dt><dd id="difDim" class="num">1024</dd></div>
+    </dl>
+
+    <p class="channel__note" id="difNote">
+      The state at step t — the same size as the finished image, never compressed.
+    </p>
+  </section>
+</main>
+
+<!-- ─────────── THE SHARED CONTROL ─────────── -->
+<section class="control" aria-label="Shared scrubber">
+  <div class="control__frame">
+    <div class="control__ends">
+      <span>noise</span>
+      <span class="control__title">drag to move both panels</span>
+      <span>image</span>
+    </div>
+    <canvas class="ticks" id="ticks" width="1200" height="14" aria-hidden="true"></canvas>
+    <input type="range" id="scrub" min="0" max="199" value="0" step="1"
+           aria-label="Shared position: noise on the left, finished image on the right">
+    <div class="control__pos"><span id="posLabel" class="num">step 1 of 200</span></div>
+  </div>
+
+  <div class="tell">
+    <div class="tell__row">
+      <span class="tell__key tell__key--vae">A</span>
+      <p>moves to a <strong>new point on a plane</strong>. Two numbers change.</p>
+    </div>
+    <div class="tell__row">
+      <span class="tell__key tell__key--dif">B</span>
+      <p>advances <strong>one step along a 200-step chain</strong>. Every step is a full-size image.</p>
+    </div>
+  </div>
+</section>
+
+<section class="compare" aria-labelledby="cmp-title">
+  <div class="compare__head">
+    <p class="eyebrow">Interaction 2 · same setup, different result</p>
+    <h2 id="cmp-title">Where the randomness lives</h2>
+    <p class="standfirst">
+      Both models are random, but the randomness enters at different points. Nothing below is
+      cherry-picked — these are the same networks you have been scrubbing through.
+    </p>
+  </div>
+
+  <div class="compare__grid">
+
+    <div class="cmp cmp--vae">
+      <h3 class="cmp__title">One image, encoded five times</h3>
+      <div class="strip">
+        <figure><canvas id="vr0" width="112" height="112"></canvas><figcaption>input</figcaption></figure>
+        <figure><canvas id="vr1" width="112" height="112"></canvas><figcaption>from the mean</figcaption></figure>
+        <figure><canvas id="vr2" width="112" height="112"></canvas><figcaption>draw 1</figcaption></figure>
+        <figure><canvas id="vr3" width="112" height="112"></canvas><figcaption>draw 2</figcaption></figure>
+        <figure><canvas id="vr4" width="112" height="112"></canvas><figcaption>draw 3</figcaption></figure>
+      </div>
+      <button class="ghost" id="vaeNext">show another image</button>
+      <p class="cmp__note">
+        The encoder does not output a point — it outputs a <em>distribution</em>. Encode the same
+        image five times and you get five slightly different z, so five slightly different
+        reconstructions. Only the second uses the mean, with no sampling at all.
+      </p>
+    </div>
+
+    <div class="cmp cmp--dif">
+      <h3 class="cmp__title">Three runs, three starting noises <span class="cmp__t num" id="difStripT">t = 199</span></h3>
+      <div class="strip strip--3">
+        <figure><canvas id="ds0" width="112" height="112"></canvas><figcaption>seed 1</figcaption></figure>
+        <figure><canvas id="ds1" width="112" height="112"></canvas><figcaption>seed 2</figcaption></figure>
+        <figure><canvas id="ds2" width="112" height="112"></canvas><figcaption>seed 3</figcaption></figure>
+      </div>
+      <p class="cmp__note">
+        Same trained network, same schedule, same number of steps. The only difference is the
+        random noise each run started from — and that alone decides which digit appears.
+        Drag the slider above to watch all three resolve at once.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<footer class="foot">
+  <p>MNIST-scale models trained for this project. All outputs precomputed — nothing runs at view time.</p>
+</footer>
+
+<div class="loading" id="loading"><span>loading model outputs…</span></div>
+
+<script src="app.js"></script>
+</body>
+</html>
