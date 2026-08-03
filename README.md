@@ -11,7 +11,7 @@ actually predicts, and how one shared objective underlies both.
 > MSc project for *Generative AI for Human-Computer Interaction*, University of Regensburg.
 > Supervised by Prof. Dr.-Ing. Bernd Ludwig.
 
-**[→ Open the tool](https://arikaki.github.io/GenAI/)**
+<!--**[→ Open the tool](https://arikaki.github.io/GenAI/)** -->
 
 ---
 
@@ -22,7 +22,7 @@ latent plane. On the diffusion side it advances one step along a 200-step chain 
 state is the same size as the finished image. The same user action produces two different kinds of
 motion, which is the point.
 
-**The diffusion panel can be switched between three views** — the noisy state $x_t$, the network's
+**The diffusion panel can be switched between three views** the noisy state $x_t$, the network's
 actual output $\hat{\epsilon}$, and the clean-image estimate $\hat{x}_0$ recovered from it. Moving
 the slider with $\hat{x}_0$ selected shows a blurred average sharpening into a digit, without the
 network ever having drawn an image.
@@ -34,7 +34,7 @@ digits.
 
 ## Running it locally
 
-The site is static and needs no build step, but it does need to be served over HTTP — opening
+The site is static and needs no build step, but it does need to be served over HTTP opening
 `index.html` directly from the file system will fail, because the page fetches its data as JSON.
 
 ```bash
@@ -48,8 +48,8 @@ python -m http.server 8000
 Nothing is computed at view time. There is no GPU dependency, no server, and no external API.
 
 The VAE and diffusion models are small, trained from scratch on MNIST. Every output the page
-displays — latent manifolds, reconstructions, forward and reverse trajectories, noise predictions,
-the variance schedule — is precomputed and exported once as sprite sheets and JSON. The page reads
+displays latent manifolds, reconstructions, forward and reverse trajectories, noise predictions,
+the variance schedule is precomputed and exported once as sprite sheets and JSON. The page reads
 those files and draws to canvas.
 
 Sprite layout is never assumed by the front end: tile size, grid dimensions and column counts are
