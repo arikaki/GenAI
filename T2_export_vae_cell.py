@@ -1,7 +1,7 @@
 import os, json, numpy as np
 from PIL import Image
 
-OUT = "web/data"; os.makedirs(OUT, exist_ok=True)
+OUT = "docs/data"; os.makedirs(OUT, exist_ok=True)
 
 # --- config: change ONLY if your notebook uses different names -----------------
 ENCODER = encoder          # keras.Model -> [z_mean, z_log_var, z]

@@ -11,7 +11,7 @@ actually predicts, and how one shared objective underlies both.
 > MSc project for *Generative AI for Human-Computer Interaction*, University of Regensburg.
 > Supervised by Prof. Dr.-Ing. Bernd Ludwig.
 
-<!--**[→ Open the tool](https://arikaki.github.io/GenAI/)** -->
+**[→ Open the tool](https://arikaki.github.io/GenAI/)**
 
 ---
 
@@ -38,7 +38,7 @@ The site is static and needs no build step, but it does need to be served over H
 `index.html` directly from the file system will fail, because the page fetches its data as JSON.
 
 ```bash
-cd web
+cd docs
 python -m http.server 8000
 # then open http://localhost:8000
 ```
