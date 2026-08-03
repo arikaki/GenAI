@@ -165,6 +165,92 @@
   </div>
 </section>
 
+<section class="regions" aria-labelledby="reg-title">
+  <div class="compare__head">
+    <p class="eyebrow">Interaction 6 · meaning has a location</p>
+    <h2 id="reg-title">Different digits, different regions</h2>
+    <p class="standfirst">
+      Five thousand test images, encoded and plotted by their two latent coordinates.
+      <strong>Click anywhere on the map</strong> — or focus it and use the arrow keys — to
+      generate from that point.
+    </p>
+  </div>
+
+  <div class="regions__grid">
+    <div class="regions__map">
+      <canvas id="regMap" width="440" height="440" tabindex="0"
+              aria-label="Latent space scatter, coloured by digit class. Click to generate from a point."></canvas>
+      <div class="legend" id="regLegend" aria-label="Digit colours"></div>
+    </div>
+
+    <div class="regions__out">
+      <div class="plate">
+        <canvas id="regImage" width="200" height="200"
+                aria-label="Image decoded from the selected latent vector"></canvas>
+      </div>
+      <dl class="readout">
+        <div><dt>you chose</dt><dd id="regZ" class="num">z = (0.00, 0.00)</dd></div>
+      </dl>
+      <p class="regions__verdict" id="regVerdict">Click the map to generate an image.</p>
+      <p class="cmp__note">
+        Nothing here is a lookup. The decoder is given only these two numbers and produces the
+        image from them — which is what it means to say the initial vector
+        <em>conditions</em> what gets generated.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="layers" aria-labelledby="lay-title">
+  <div class="compare__head">
+    <p class="eyebrow">Interaction 5 · inside the networks</p>
+    <h2 id="lay-title">How the input is compressed</h2>
+    <p class="standfirst">
+      Every station below is a real layer from the trained models, with its actual shape and
+      activations. <strong>Tile size</strong> follows the spatial dimension;
+      <strong>bar height</strong> follows how many numbers the layer holds, on a log scale shared
+      by both rows.
+    </p>
+  </div>
+
+  <div class="lblock lblock--vae">
+    <div class="lblock__head">
+      <span class="channel__tag">Channel A</span>
+      <h3 class="cmp__title">VAE encoder</h3>
+    </div>
+    <div class="lrow" id="lrowVae"></div>
+    <dl class="lsum" id="lsumVae"></dl>
+    <p class="cmp__note">
+      The count is <em>not</em> monotonic: the first convolution makes it larger, because the
+      spatial size halves while the channels grow from 1 to 32. The real compression happens at
+      the dense layers, and the encoder <em>stops</em> at an embedding.
+    </p>
+  </div>
+
+  <div class="lblock lblock--dif">
+    <div class="lblock__head">
+      <span class="channel__tag">Channel B</span>
+      <h3 class="cmp__title">Diffusion U-Net</h3>
+      <div class="views views--inline" role="group" aria-label="How many stations to show">
+        <button class="view is-active" data-stations="key">
+          <span class="view__txt">key stations</span>
+        </button>
+        <button class="view" data-stations="all">
+          <span class="view__txt">every layer</span>
+        </button>
+      </div>
+    </div>
+    <div class="lrow" id="lrowDif"></div>
+    <dl class="lsum" id="lsumDif"></dl>
+    <p class="cmp__note">
+      The spatial size falls to 4×4 and then climbs back to 32×32. The network is shaped like an
+      hourglass, but it is a <em>wide</em> one — see the figure below.
+    </p>
+  </div>
+
+  <p class="verdict" id="verdict"></p>
+</section>
+
 <footer class="foot">
   <p>MNIST-scale models trained for this project. All outputs precomputed — nothing runs at view time.</p>
 </footer>

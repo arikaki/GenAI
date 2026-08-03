@@ -1,0 +1,545 @@
+{
+ "tile": 64,
+ "model": "diffusion_unet",
+ "probe_t": 100,
+ "stations": [
+  {
+   "name": "input x_t",
+   "type": "Input",
+   "shape": [
+    32,
+    32,
+    1
+   ],
+   "elements": 1024,
+   "spatial": true,
+   "depth": 0,
+   "branch": "main",
+   "key": true
+  },
+  {
+   "name": "conv2d",
+   "type": "Conv2D",
+   "shape": [
+    32,
+    32,
+    42
+   ],
+   "elements": 43008,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "sinusoidal_pos_emb",
+   "type": "SinusoidalPosEmb",
+   "shape": [
+    64
+   ],
+   "elements": 64,
+   "spatial": false,
+   "depth": 2,
+   "branch": "time",
+   "key": false
+  },
+  {
+   "name": "dense",
+   "type": "Dense",
+   "shape": [
+    256
+   ],
+   "elements": 256,
+   "spatial": false,
+   "depth": 2,
+   "branch": "time",
+   "key": false
+  },
+  {
+   "name": "gelu",
+   "type": "GELU",
+   "shape": [
+    256
+   ],
+   "elements": 256,
+   "spatial": false,
+   "depth": 2,
+   "branch": "time",
+   "key": false
+  },
+  {
+   "name": "dense_1",
+   "type": "Dense",
+   "shape": [
+    256
+   ],
+   "elements": 256,
+   "spatial": false,
+   "depth": 2,
+   "branch": "time",
+   "key": false
+  },
+  {
+   "name": "resnet_block",
+   "type": "ResnetBlock",
+   "shape": [
+    32,
+    32,
+    64
+   ],
+   "elements": 65536,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_1",
+   "type": "ResnetBlock",
+   "shape": [
+    32,
+    32,
+    64
+   ],
+   "elements": 65536,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "residual",
+   "type": "Residual",
+   "shape": [
+    32,
+    32,
+    64
+   ],
+   "elements": 65536,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "conv2d_8",
+   "type": "Conv2D",
+   "shape": [
+    16,
+    16,
+    64
+   ],
+   "elements": 16384,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": true
+  },
+  {
+   "name": "resnet_block_2",
+   "type": "ResnetBlock",
+   "shape": [
+    16,
+    16,
+    128
+   ],
+   "elements": 32768,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_3",
+   "type": "ResnetBlock",
+   "shape": [
+    16,
+    16,
+    128
+   ],
+   "elements": 32768,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "residual_1",
+   "type": "Residual",
+   "shape": [
+    16,
+    16,
+    128
+   ],
+   "elements": 32768,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "conv2d_16",
+   "type": "Conv2D",
+   "shape": [
+    8,
+    8,
+    128
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": true
+  },
+  {
+   "name": "resnet_block_4",
+   "type": "ResnetBlock",
+   "shape": [
+    8,
+    8,
+    256
+   ],
+   "elements": 16384,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_5",
+   "type": "ResnetBlock",
+   "shape": [
+    8,
+    8,
+    256
+   ],
+   "elements": 16384,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "residual_2",
+   "type": "Residual",
+   "shape": [
+    8,
+    8,
+    256
+   ],
+   "elements": 16384,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "conv2d_24",
+   "type": "Conv2D",
+   "shape": [
+    4,
+    4,
+    256
+   ],
+   "elements": 4096,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": true
+  },
+  {
+   "name": "resnet_block_6",
+   "type": "ResnetBlock",
+   "shape": [
+    4,
+    4,
+    512
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_7",
+   "type": "ResnetBlock",
+   "shape": [
+    4,
+    4,
+    512
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "residual_3",
+   "type": "Residual",
+   "shape": [
+    4,
+    4,
+    512
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "identity_4",
+   "type": "Identity",
+   "shape": [
+    4,
+    4,
+    512
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_8",
+   "type": "ResnetBlock",
+   "shape": [
+    4,
+    4,
+    512
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "residual_4",
+   "type": "Residual",
+   "shape": [
+    4,
+    4,
+    512
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_9",
+   "type": "ResnetBlock",
+   "shape": [
+    4,
+    4,
+    512
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_10",
+   "type": "ResnetBlock",
+   "shape": [
+    4,
+    4,
+    256
+   ],
+   "elements": 4096,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_11",
+   "type": "ResnetBlock",
+   "shape": [
+    4,
+    4,
+    256
+   ],
+   "elements": 4096,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "residual_5",
+   "type": "Residual",
+   "shape": [
+    4,
+    4,
+    256
+   ],
+   "elements": 4096,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "conv2d_transpose",
+   "type": "Conv2DTranspose",
+   "shape": [
+    8,
+    8,
+    256
+   ],
+   "elements": 16384,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": true
+  },
+  {
+   "name": "resnet_block_12",
+   "type": "ResnetBlock",
+   "shape": [
+    8,
+    8,
+    128
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_13",
+   "type": "ResnetBlock",
+   "shape": [
+    8,
+    8,
+    128
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "residual_6",
+   "type": "Residual",
+   "shape": [
+    8,
+    8,
+    128
+   ],
+   "elements": 8192,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "conv2d_transpose_1",
+   "type": "Conv2DTranspose",
+   "shape": [
+    16,
+    16,
+    128
+   ],
+   "elements": 32768,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": true
+  },
+  {
+   "name": "resnet_block_14",
+   "type": "ResnetBlock",
+   "shape": [
+    16,
+    16,
+    64
+   ],
+   "elements": 16384,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "resnet_block_15",
+   "type": "ResnetBlock",
+   "shape": [
+    16,
+    16,
+    64
+   ],
+   "elements": 16384,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "residual_7",
+   "type": "Residual",
+   "shape": [
+    16,
+    16,
+    64
+   ],
+   "elements": 16384,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "conv2d_transpose_2",
+   "type": "Conv2DTranspose",
+   "shape": [
+    32,
+    32,
+    64
+   ],
+   "elements": 65536,
+   "spatial": true,
+   "depth": 1,
+   "branch": "main",
+   "key": true
+  },
+  {
+   "name": "resnet_block_16",
+   "type": "ResnetBlock",
+   "shape": [
+    32,
+    32,
+    64
+   ],
+   "elements": 65536,
+   "spatial": true,
+   "depth": 2,
+   "branch": "main",
+   "key": false
+  },
+  {
+   "name": "conv2d_62",
+   "type": "Conv2D",
+   "shape": [
+    32,
+    32,
+    1
+   ],
+   "elements": 1024,
+   "spatial": true,
+   "depth": 2,
+   "branch": "main",
+   "key": true
+  }
+ ]
+}

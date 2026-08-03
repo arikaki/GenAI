@@ -1,0 +1,92 @@
+{
+ "tile": 64,
+ "model": "vae_encoder",
+ "stations": [
+  {
+   "name": "input",
+   "type": "Image",
+   "shape": [
+    28,
+    28,
+    1
+   ],
+   "elements": 784,
+   "spatial": true,
+   "branch": "main"
+  },
+  {
+   "name": "conv2d",
+   "type": "Conv2D",
+   "shape": [
+    14,
+    14,
+    32
+   ],
+   "elements": 6272,
+   "spatial": true,
+   "branch": "main"
+  },
+  {
+   "name": "conv2d_1",
+   "type": "Conv2D",
+   "shape": [
+    7,
+    7,
+    64
+   ],
+   "elements": 3136,
+   "spatial": true,
+   "branch": "main"
+  },
+  {
+   "name": "flatten",
+   "type": "Flatten",
+   "shape": [
+    3136
+   ],
+   "elements": 3136,
+   "spatial": false,
+   "branch": "main"
+  },
+  {
+   "name": "dense",
+   "type": "Dense",
+   "shape": [
+    16
+   ],
+   "elements": 16,
+   "spatial": false,
+   "branch": "main"
+  },
+  {
+   "name": "z_mean",
+   "type": "Dense",
+   "shape": [
+    2
+   ],
+   "elements": 2,
+   "spatial": false,
+   "branch": "main"
+  },
+  {
+   "name": "z_log_var",
+   "type": "Dense",
+   "shape": [
+    2
+   ],
+   "elements": 2,
+   "spatial": false,
+   "branch": "main"
+  },
+  {
+   "name": "sampling",
+   "type": "Sampling",
+   "shape": [
+    2
+   ],
+   "elements": 2,
+   "spatial": false,
+   "branch": "main"
+  }
+ ]
+}

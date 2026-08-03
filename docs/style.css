@@ -310,6 +310,158 @@ body{
 .cmp__note{margin:0;font-size:.85rem;color:var(--muted)}
 .cmp__note em{color:var(--ink);font-style:italic}
 
+/* ─── I5 · how the input is compressed ─────────────────── */
+
+.layers{
+  max-width:70rem;margin:clamp(2.5rem,6vw,4rem) auto 0;
+  padding:0 var(--gutter);
+}
+
+.lblock{
+  background:var(--panel);
+  border:1px solid var(--rule);
+  border-left:3px solid var(--chan);
+  border-radius:3px;
+  padding:clamp(1rem,2vw,1.35rem);
+  margin-bottom:1rem;
+}
+.lblock--vae{--chan:var(--vae)}
+.lblock--dif{--chan:var(--dif)}
+
+.lblock__head{
+  display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;
+  margin-bottom:1rem;
+}
+.lblock__head .cmp__title{flex:1 1 auto;display:block}
+
+.views--inline{display:flex;gap:.3rem;grid-template-columns:none}
+.views--inline .view{padding:.3rem .6rem}
+.views--inline .view__txt{font-size:.62rem}
+
+/* the station row — this is the network's profile, read left to right */
+.lrow{
+  display:flex;align-items:flex-end;gap:.55rem;
+  overflow-x:auto;padding:.5rem .25rem 0;
+  scrollbar-width:thin;
+}
+.lrow--dense{gap:.2rem}
+.lrow--dense .station__name{display:none}
+.lrow--dense .station__shape{font-size:.5rem}
+
+.station{
+  flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:.3rem;
+  min-width:2.6rem;
+}
+
+.station__tile{
+  display:flex;align-items:flex-end;justify-content:center;
+  background:var(--plate);border-radius:2px;padding:3px;
+}
+.station__tile canvas{display:block;image-rendering:pixelated;border-radius:1px}
+
+/* bar height encodes element count on a shared log scale */
+.station__bar{
+  height:80px;width:14px;display:flex;align-items:center;justify-content:center;
+  border-bottom:1px solid var(--rule);
+}
+.station__bar span{
+  display:block;width:100%;border-radius:1px;
+  background:var(--chan);opacity:.85;
+}
+
+.station__num{
+  font-family:var(--mono);font-size:.6rem;font-weight:600;
+  font-variant-numeric:tabular-nums;color:var(--ink);
+}
+.station__shape{
+  font-family:var(--mono);font-size:.56rem;color:var(--muted);white-space:nowrap;
+}
+.station__name{
+  font-family:var(--mono);font-size:.5rem;color:#939EA9;
+  max-width:5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+.station--vec .station__tile{opacity:.75}
+
+/* side-branch stations (the U-Net's timestep embedding) are not on the image
+   path — dimmed and dashed so the row is not read as a single flow */
+.station--side{opacity:.5}
+.station--side .station__bar{border-bottom-style:dashed}
+.station--side .station__bar span{background:var(--muted)}
+
+/* summary strip */
+.lsum{
+  margin:1rem 0 .75rem;display:flex;gap:1.75rem;flex-wrap:wrap;
+  padding-top:.75rem;border-top:1px solid var(--rule);
+}
+.lsum div{display:flex;flex-direction:column;gap:.15rem}
+.lsum dt{
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted);
+}
+.lsum dd{margin:0}
+.lsum .num{font-size:.88rem;color:var(--chan)}
+
+.verdict{
+  margin:1.25rem 0 0;padding:1rem 1.15rem;
+  background:var(--ink);color:#C8D2DB;border-radius:3px;
+  font-size:.92rem;line-height:1.55;
+}
+.verdict strong{color:#fff;font-weight:680}
+
+/* ─── I6 · meaning has a location ──────────────────────── */
+
+.regions{
+  max-width:70rem;margin:clamp(2.5rem,6vw,4rem) auto 0;
+  padding:0 var(--gutter);
+}
+
+.regions__grid{
+  display:grid;grid-template-columns:1.15fr .85fr;
+  gap:clamp(1rem,2.5vw,1.75rem);align-items:start;
+}
+
+.regions__map{
+  background:var(--panel);border:1px solid var(--rule);
+  border-left:3px solid var(--vae);border-radius:3px;
+  padding:clamp(.75rem,1.5vw,1rem);
+}
+.regions__map canvas{
+  width:100%;height:auto;display:block;border-radius:2px;cursor:crosshair;
+}
+.regions__map canvas:focus-visible{outline:2px solid var(--vae);outline-offset:2px}
+
+.legend{
+  display:flex;flex-wrap:wrap;gap:.15rem .7rem;margin-top:.7rem;
+}
+.legend__item{
+  display:inline-flex;align-items:center;gap:.28rem;
+  font-family:var(--mono);font-size:.62rem;color:var(--muted);
+}
+.legend__item i{
+  width:.62rem;height:.62rem;border-radius:1px;display:block;
+}
+
+.regions__out{
+  display:flex;flex-direction:column;gap:.9rem;
+  background:var(--panel);border:1px solid var(--rule);border-radius:3px;
+  padding:clamp(1rem,2vw,1.35rem);
+}
+.regions__out .plate{padding:.75rem}
+.regions__out .plate canvas{max-width:200px;margin-inline:auto}
+.regions__out .readout{--chan:var(--vae)}
+
+.regions__verdict{
+  margin:0;padding:.7rem .85rem;
+  background:var(--ground);border-radius:2px;
+  font-size:.85rem;color:var(--muted);
+}
+.regions__verdict strong{color:var(--vae);font-weight:660}
+.regions__verdict code{
+  font-family:var(--mono);font-size:.78rem;
+  background:#DEE4EA;padding:.05rem .25rem;border-radius:2px;
+}
+
 /* ─── foot ─────────────────────────────────────────────── */
 
 .foot{
@@ -337,7 +489,7 @@ body{
 /* ─── responsive ───────────────────────────────────────── */
 
 @media (max-width:760px){
-  .bench,.compare__grid{grid-template-columns:1fr}
+  .bench,.compare__grid,.regions__grid{grid-template-columns:1fr}
   .tell{grid-template-columns:1fr;gap:.6rem}
 }
 
