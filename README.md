@@ -57,7 +57,7 @@ all read from the accompanying JSON, so re-exporting with different settings doe
 page.
 
 ```text
-web/
+docs/              served by GitHub Pages
 ├── index.html
 ├── app.js
 ├── style.css
