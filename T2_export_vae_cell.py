@@ -3,7 +3,7 @@ from PIL import Image
 
 OUT = "docs/data"; os.makedirs(OUT, exist_ok=True)
 
-# --- config: change ONLY if your notebook uses different names -----------------
+
 ENCODER = encoder          # keras.Model -> [z_mean, z_log_var, z]
 DECODER = decoder          # keras.Model: z -> image
 DATA    = mnist_digits     # (N,28,28,1) float in [0,1]

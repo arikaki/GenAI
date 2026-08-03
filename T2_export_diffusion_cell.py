@@ -3,7 +3,7 @@ from PIL import Image
 
 OUT = "docs/data"; os.makedirs(OUT, exist_ok=True)
 
-# --- config: change ONLY if your notebook uses different names -----------------
+
 MODEL = unet               # trained U-Net, predicts noise
 T     = timesteps          # 200
 SEEDS = 3                  # how many reverse trajectories to export
