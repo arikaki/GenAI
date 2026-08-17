@@ -1,9 +1,3 @@
-/* ============================================================
-   Two ways to make an image
-   Instrument-panel layout: two channels, one calibrated control.
-   No web fonts — the bundle must open offline from a folder.
-   ============================================================ */
-
 :root{
   --ground:#E6EAEE;
   --panel:#F7F9FB;
@@ -62,38 +56,12 @@ body{
 }
 .standfirst strong{color:var(--ink);font-weight:640}
 
-/* ─── the bench: two channels ──────────────────────────── */
-
-.bench{
-  max-width:70rem;margin-inline:auto;
-  padding:0 var(--gutter);
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:clamp(1rem,2.5vw,1.75rem);
-  align-items:start;
-}
-
-.channel{
-  background:var(--panel);
-  border:1px solid var(--rule);
-  border-top:3px solid var(--chan);
-  border-radius:3px;
-  padding:clamp(1rem,2vw,1.5rem);
-  display:flex;flex-direction:column;gap:1rem;
-}
-.channel--vae{--chan:var(--vae)}
-.channel--dif{--chan:var(--dif)}
-
-.channel__head{display:flex;flex-direction:column;gap:.3rem}
+/* ─── shared: channel tag ──────────────────────────────── */
 
 .channel__tag{
   font-family:var(--mono);
   font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
   color:var(--chan);
-}
-
-.channel__name{
-  margin:0;font-size:clamp(1rem,2vw,1.22rem);
-  font-weight:660;letter-spacing:-.015em;
 }
 
 /* the dark specimen plate */
@@ -108,25 +76,6 @@ body{
   image-rendering:pixelated;
   display:block;
 }
-
-/* small instrument readouts (latent map / schedule curve) */
-.instrument{display:flex;flex-direction:column;gap:.4rem}
-
-.instrument__label{
-  font-family:var(--mono);
-  font-size:.66rem;letter-spacing:.05em;
-  color:var(--muted);
-}
-
-.map{
-  background:#fff;
-  border:1px solid var(--rule);
-  border-radius:2px;
-  padding:.4rem;
-}
-/* the latent map is a reference, not the specimen — keep it small */
-.map canvas{width:100%;height:auto;display:block;margin-inline:auto}
-.map--square canvas{max-width:190px}
 
 /* numeric readout strip */
 .readout{
@@ -147,11 +96,6 @@ body{
   font-variant-numeric:tabular-nums;
   color:var(--chan,var(--ink));
 }
-
-.channel__note{
-  margin:0;font-size:.87rem;color:var(--muted);
-}
-.channel__note em{color:var(--ink);font-style:italic}
 
 /* ─── view toggle (I4) ─────────────────────────────────── */
 
@@ -176,76 +120,6 @@ body{
 
 .view__sym{font-family:var(--mono);font-size:.95rem;font-weight:640}
 .view__txt{font-size:.62rem;letter-spacing:.02em;text-align:center;line-height:1.2}
-
-/* ─── the shared control — signature element ───────────── */
-
-.control{
-  max-width:70rem;margin:clamp(1.5rem,4vw,2.5rem) auto 0;
-  padding:0 var(--gutter);
-}
-
-.control__frame{
-  background:var(--ink);
-  border-radius:3px;
-  padding:clamp(1rem,2.5vw,1.5rem) clamp(1rem,3vw,2rem) clamp(.85rem,2vw,1.15rem);
-}
-
-.control__ends{
-  display:flex;justify-content:space-between;align-items:baseline;
-  font-family:var(--mono);
-  font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
-  color:#7C8996;
-  margin-bottom:.6rem;
-}
-.control__title{color:#B7C2CC;letter-spacing:.1em}
-
-.ticks{width:100%;height:14px;display:block;opacity:.55}
-
-#scrub{
-  -webkit-appearance:none;appearance:none;
-  width:100%;height:34px;margin:.1rem 0 0;
-  background:transparent;cursor:grab;display:block;
-}
-#scrub:active{cursor:grabbing}
-
-#scrub::-webkit-slider-runnable-track{
-  height:3px;background:#39434E;border-radius:2px;
-}
-#scrub::-moz-range-track{height:3px;background:#39434E;border-radius:2px}
-
-#scrub::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width:16px;height:26px;margin-top:-11.5px;
-  border-radius:2px;
-  background:linear-gradient(180deg,var(--vae) 0 50%,var(--dif) 50% 100%);
-  border:1px solid #0A0F14;
-}
-#scrub::-moz-range-thumb{
-  width:16px;height:26px;border-radius:2px;border:1px solid #0A0F14;
-  background:linear-gradient(180deg,var(--vae) 0 50%,var(--dif) 50% 100%);
-}
-#scrub:focus-visible{outline:2px solid #fff;outline-offset:4px}
-
-.control__pos{text-align:center;margin-top:.2rem}
-.control__pos .num{color:#B7C2CC;font-size:.72rem;letter-spacing:.06em}
-
-/* the tell — what just happened, one line per channel */
-.tell{
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:clamp(1rem,2.5vw,1.75rem);
-  margin-top:1rem;
-}
-.tell__row{display:flex;gap:.6rem;align-items:flex-start}
-.tell__row p{margin:0;font-size:.87rem;color:var(--muted)}
-.tell__row strong{color:var(--ink);font-weight:640}
-
-.tell__key{
-  flex:none;width:1.35rem;height:1.35rem;border-radius:2px;
-  display:grid;place-items:center;
-  font-family:var(--mono);font-size:.7rem;font-weight:700;color:#fff;
-}
-.tell__key--vae{background:var(--vae)}
-.tell__key--dif{background:var(--dif)}
 
 /* ─── I2 · where the randomness lives ──────────────────── */
 
@@ -409,27 +283,7 @@ body{
 }
 .verdict strong{color:#fff;font-weight:680}
 
-/* ─── I6 · meaning has a location ──────────────────────── */
-
-.regions{
-  max-width:70rem;margin:clamp(2.5rem,6vw,4rem) auto 0;
-  padding:0 var(--gutter);
-}
-
-.regions__grid{
-  display:grid;grid-template-columns:1.15fr .85fr;
-  gap:clamp(1rem,2.5vw,1.75rem);align-items:start;
-}
-
-.regions__map{
-  background:var(--panel);border:1px solid var(--rule);
-  border-left:3px solid var(--vae);border-radius:3px;
-  padding:clamp(.75rem,1.5vw,1rem);
-}
-.regions__map canvas{
-  width:100%;height:auto;display:block;border-radius:2px;cursor:crosshair;
-}
-.regions__map canvas:focus-visible{outline:2px solid var(--vae);outline-offset:2px}
+/* ─── shared: map legend + verdict pill ─────────────────── */
 
 .legend{
   display:flex;flex-wrap:wrap;gap:.15rem .7rem;margin-top:.7rem;
@@ -441,15 +295,6 @@ body{
 .legend__item i{
   width:.62rem;height:.62rem;border-radius:1px;display:block;
 }
-
-.regions__out{
-  display:flex;flex-direction:column;gap:.9rem;
-  background:var(--panel);border:1px solid var(--rule);border-radius:3px;
-  padding:clamp(1rem,2vw,1.35rem);
-}
-.regions__out .plate{padding:.75rem}
-.regions__out .plate canvas{max-width:200px;margin-inline:auto}
-.regions__out .readout{--chan:var(--vae)}
 
 .regions__verdict{
   margin:0;padding:.7rem .85rem;
@@ -489,10 +334,158 @@ body{
 /* ─── responsive ───────────────────────────────────────── */
 
 @media (max-width:760px){
-  .bench,.compare__grid,.regions__grid{grid-template-columns:1fr}
-  .tell{grid-template-columns:1fr;gap:.6rem}
+  .compare__grid,.start__grid,.proc__grid{grid-template-columns:1fr}
 }
 
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important;animation:none !important}
+}
+
+
+/* ─── the shared start ─────────────────────────────────── */
+
+.start{max-width:70rem;margin:clamp(1.5rem,4vw,2.5rem) auto 0;padding:0 var(--gutter)}
+
+.start__grid{
+  display:grid;grid-template-columns:1.1fr .9fr;
+  gap:clamp(1rem,2.5vw,1.75rem);align-items:start;
+}
+
+.start__map{
+  background:var(--panel);border:1px solid var(--rule);
+  border-radius:3px;padding:clamp(.75rem,1.5vw,1rem);
+}
+.start__map canvas{
+  width:100%;height:auto;display:block;border-radius:2px;cursor:crosshair;
+}
+.start__map canvas:focus-visible{outline:2px solid var(--vae);outline-offset:2px}
+
+.start__cards{display:flex;flex-direction:column;gap:.9rem}
+
+.draw{
+  background:var(--panel);border:1px solid var(--rule);
+  border-left:3px solid var(--chan);border-radius:3px;
+  padding:clamp(.85rem,1.8vw,1.15rem);
+}
+.draw--vae{--chan:var(--vae)}
+.draw--dif{--chan:var(--dif)}
+
+.draw__title{margin:.3rem 0 .5rem;font-size:1.05rem;font-weight:680;letter-spacing:-.02em}
+.draw__val{margin:0;font-size:1.05rem;color:var(--vae)}
+.draw__tile{
+  background:var(--plate);border-radius:2px;padding:.5rem;
+  display:grid;place-items:center;
+}
+.draw__tile canvas{width:128px;height:128px;image-rendering:pixelated;display:block}
+.draw__note{margin:.6rem 0 0;font-size:.8rem;color:var(--muted)}
+
+/* ─── a process channel ────────────────────────────────── */
+
+.proc{
+  max-width:70rem;margin:clamp(1.5rem,4vw,2.5rem) auto 0;
+  padding:clamp(1rem,2vw,1.5rem) clamp(1rem,3vw,1.75rem);
+  border:1px solid var(--rule);border-top:3px solid var(--chan);
+  border-radius:3px;background:var(--panel);
+}
+.proc--vae{--chan:var(--vae)}
+.proc--dif{--chan:var(--dif)}
+
+.proc__head{margin-bottom:1.1rem}
+.proc__head h2{
+  margin:.35rem 0 0;font-size:clamp(1.2rem,2.6vw,1.6rem);
+  font-weight:700;letter-spacing:-.025em;line-height:1.1;
+}
+
+.proc__grid{
+  display:grid;grid-template-columns:auto 1fr;
+  gap:clamp(1rem,2.5vw,1.75rem);align-items:start;
+}
+.proc__side{display:flex;flex-direction:column;gap:.85rem}
+.proc__side .readout{--chan:var(--chan);padding-top:0;border-top:none}
+
+.proc__ends{
+  display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-top:-.6rem;
+}
+
+.proc input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:26px;
+  background:transparent;cursor:grab;display:block;margin:0;
+}
+.proc input[type=range]:active{cursor:grabbing}
+.proc input[type=range]::-webkit-slider-runnable-track{
+  height:3px;background:var(--rule);border-radius:2px;
+}
+.proc input[type=range]::-moz-range-track{height:3px;background:var(--rule);border-radius:2px}
+.proc input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:22px;margin-top:-9.5px;
+  border-radius:2px;background:var(--chan);border:1px solid rgba(0,0,0,.25);
+}
+.proc input[type=range]::-moz-range-thumb{
+  width:14px;height:22px;border-radius:2px;background:var(--chan);
+  border:1px solid rgba(0,0,0,.25);
+}
+.proc input[type=range]:disabled{opacity:.4;cursor:not-allowed}
+.proc input[type=range]:focus-visible{outline:2px solid var(--chan);outline-offset:3px}
+
+.proc .plate{padding:clamp(.75rem,1.5vw,1rem)}
+.proc .plate canvas{width:240px;max-width:100%;height:auto;image-rendering:pixelated;display:block}
+
+.sched{margin-top:1rem;background:#fff;border:1px solid var(--rule);border-radius:2px;padding:.5rem}
+.sched canvas{width:100%;height:auto;display:block}
+
+.station.is-current{outline:2px solid var(--chan);outline-offset:2px;border-radius:2px}
+.station{cursor:pointer}
+.lrow .station{cursor:default}
+#paRow{margin-top:1.1rem}
+#paRow .station{cursor:pointer}
+
+@media (max-width:760px){
+  .proc__grid{grid-template-columns:1fr}
+  .proc .plate canvas{width:100%}
+}
+
+/* ─── T20 · changing the size of the latent space ──────── */
+
+.dims{max-width:70rem;margin:clamp(2.5rem,6vw,4rem) auto 0;padding:0 var(--gutter)}
+
+.dims__views{
+  display:flex;gap:.35rem;grid-template-columns:none;margin-bottom:1rem;
+}
+.dims__views .view{padding:.4rem .8rem}
+
+.dims__rows{
+  background:var(--panel);border:1px solid var(--rule);border-radius:3px;
+  padding:clamp(.75rem,1.5vw,1.1rem);
+  display:flex;flex-direction:column;gap:.5rem;
+}
+
+.dimrow{
+  display:grid;grid-template-columns:9.5rem 1fr;gap:1rem;align-items:center;
+  padding:.45rem .5rem;border-radius:2px;
+}
+.dimrow.is-default{background:#EFF3F7;outline:1px solid var(--rule)}
+
+.dimrow__label{display:flex;flex-direction:column;gap:.12rem;min-width:0}
+.dimrow__n{
+  font-family:var(--mono);font-size:.86rem;font-weight:650;color:var(--ink);
+}
+.dimrow__sub{font-family:var(--mono);font-size:.58rem;color:var(--muted)}
+.dimrow__tag{
+  margin-top:.2rem;align-self:flex-start;
+  font-family:var(--mono);font-size:.52rem;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--vae);color:#fff;padding:.1rem .35rem;border-radius:2px;
+}
+
+.dimrow__strip{
+  display:flex;gap:.25rem;background:var(--plate);border-radius:2px;
+  padding:.35rem;overflow-x:auto;
+}
+.dimrow__strip canvas{
+  width:48px;height:48px;flex:0 0 auto;display:block;image-rendering:pixelated;
+}
+
+@media (max-width:760px){
+  .dimrow{grid-template-columns:1fr;gap:.4rem}
 }

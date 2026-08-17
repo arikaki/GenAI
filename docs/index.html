@@ -9,114 +9,130 @@
 <body>
 
 <header class="masthead">
-  <p class="eyebrow">One control · two model families</p>
+  <p class="eyebrow">One random draw · two ways to use it</p>
   <h1>Two ways to<br><em>make an image</em></h1>
   <p class="standfirst">
-    Both panels below are driven by the <strong>same slider</strong>. Watch what each one does as
-    you move it — the difference in how they move is the whole point.
+    Both models begin the same way: by drawing a random vector from a normal distribution.
+    What each one <strong>does</strong> with that draw could hardly be more different.
+    Choose a starting point below, then watch both models work from it.
   </p>
 </header>
 
-<main class="bench">
-
-  <!-- ─────────── CHANNEL A · VAE ─────────── -->
-  <section class="channel channel--vae" aria-labelledby="ch-a-title">
-    <div class="channel__head">
-      <span class="channel__tag">Channel A</span>
-      <h2 class="channel__name" id="ch-a-title">Variational autoencoder</h2>
-    </div>
-
-    <div class="plate">
-      <canvas id="vaeImage" width="280" height="280"
-              aria-label="Image decoded from the current latent position"></canvas>
-    </div>
-
-    <div class="instrument">
-      <div class="instrument__label">Latent space — every image lives on this plane</div>
-      <div class="map map--square">
-        <canvas id="vaeMap" width="240" height="240"
-                aria-label="Two dimensional latent space with current position marked"></canvas>
-      </div>
-    </div>
-
-    <dl class="readout">
-      <div><dt>position</dt><dd id="vaeZ" class="num">z = (0.00, 0.00)</dd></div>
-      <div><dt>dimensions</dt><dd class="num">2</dd></div>
-    </dl>
-
-    <p class="channel__note">
-      Two numbers are enough to say <em>which</em> image. The encoder learned to squeeze
-      784 pixels down to this plane.
+<!-- ─────────── THE SHARED START ─────────── -->
+<section class="start" aria-labelledby="start-title">
+  <div class="compare__head">
+    <p class="eyebrow">Step one · the same idea, two sizes</p>
+    <h2 id="start-title">Draw a random vector</h2>
+    <p class="standfirst">
+      Click the map to choose a draw — or use the arrow keys. The map shows where five thousand
+      real images land, coloured by digit.
     </p>
-  </section>
-
-  <!-- ─────────── CHANNEL B · DIFFUSION ─────────── -->
-  <section class="channel channel--dif" aria-labelledby="ch-b-title">
-    <div class="channel__head">
-      <span class="channel__tag">Channel B</span>
-      <h2 class="channel__name" id="ch-b-title">Diffusion model</h2>
-    </div>
-
-    <div class="plate">
-      <canvas id="difImage" width="280" height="280"
-              aria-label="Diffusion model state at the current timestep"></canvas>
-    </div>
-
-    <div class="views" role="group" aria-label="Choose what to display">
-      <button class="view is-active" data-view="reverse">
-        <span class="view__sym">x<sub>t</sub></span><span class="view__txt">noisy image</span>
-      </button>
-      <button class="view" data-view="eps">
-        <span class="view__sym">&epsilon;&#770;</span><span class="view__txt">predicted noise</span>
-      </button>
-      <button class="view" data-view="x0">
-        <span class="view__sym">x&#770;<sub>0</sub></span><span class="view__txt">implied clean image</span>
-      </button>
-    </div>
-
-    <div class="instrument">
-      <div class="instrument__label">Noise schedule — signal remaining, &alpha;&#772;<sub>t</sub> (rises toward the image)</div>
-      <div class="map">
-        <canvas id="difSched" width="480" height="200"
-                aria-label="Alpha-bar schedule curve with current timestep marked"></canvas>
-      </div>
-    </div>
-
-    <dl class="readout">
-      <div><dt>timestep</dt><dd id="difT" class="num">t = 199</dd></div>
-      <div><dt>dimensions</dt><dd id="difDim" class="num">1024</dd></div>
-    </dl>
-
-    <p class="channel__note" id="difNote">
-      The state at step t — the same size as the finished image, never compressed.
-    </p>
-  </section>
-</main>
-
-<!-- ─────────── THE SHARED CONTROL ─────────── -->
-<section class="control" aria-label="Shared scrubber">
-  <div class="control__frame">
-    <div class="control__ends">
-      <span>noise</span>
-      <span class="control__title">drag to move both panels</span>
-      <span>image</span>
-    </div>
-    <canvas class="ticks" id="ticks" width="1200" height="14" aria-hidden="true"></canvas>
-    <input type="range" id="scrub" min="0" max="199" value="0" step="1"
-           aria-label="Shared position: noise on the left, finished image on the right">
-    <div class="control__pos"><span id="posLabel" class="num">step 1 of 200</span></div>
   </div>
 
-  <div class="tell">
-    <div class="tell__row">
-      <span class="tell__key tell__key--vae">A</span>
-      <p>moves to a <strong>new point on a plane</strong>. Two numbers change.</p>
+  <div class="start__grid">
+    <div class="start__map">
+      <canvas id="startMap" width="440" height="440" tabindex="0"
+              aria-label="Latent space, coloured by digit class. Click to choose a starting vector."></canvas>
+      <div class="legend" id="startLegend" aria-label="Digit colours"></div>
+      <p class="regions__verdict" id="startVerdict">Click the map to choose a starting point.</p>
     </div>
-    <div class="tell__row">
-      <span class="tell__key tell__key--dif">B</span>
-      <p>advances <strong>one step along a 200-step chain</strong>. Every step is a full-size image.</p>
+
+    <div class="start__cards">
+      <div class="draw draw--vae">
+        <span class="channel__tag">for Channel A</span>
+        <h3 class="draw__title">2 numbers</h3>
+        <p class="draw__val num" id="startZ">z = (0.00, 0.00)</p>
+        <p class="draw__note">The whole starting vector, written out. It fits on one line.</p>
+      </div>
+
+      <div class="draw draw--dif">
+        <span class="channel__tag">for Channel B</span>
+        <h3 class="draw__title">1024 numbers</h3>
+        <div class="draw__tile"><canvas id="startNoise" width="128" height="128"
+             aria-label="The 1024-dimensional starting noise, shown as a 32 by 32 image"></canvas></div>
+        <p class="draw__note">The same kind of draw, one value per pixel. It can only be shown as a picture.</p>
+      </div>
+
+      <button class="ghost" id="newDraw">new draw</button>
     </div>
   </div>
+
+  <p class="verdict">
+    Both are samples from the <strong>same distribution</strong>. The difference is size:
+    the VAE's draw has <strong>2</strong> dimensions, the diffusion model's has
+    <strong>1024</strong> — one for every pixel of the image it will become.
+  </p>
+</section>
+
+<!-- ─────────── CHANNEL A ─────────── -->
+<section class="proc proc--vae" aria-labelledby="pa-title">
+  <div class="proc__head">
+    <span class="channel__tag">Channel A · variational autoencoder</span>
+    <h2 id="pa-title">The decoder expands 2 numbers into an image</h2>
+  </div>
+
+  <div class="proc__grid">
+    <div class="plate">
+      <canvas id="paImage" width="240" height="240"
+              aria-label="Decoder activation at the selected layer"></canvas>
+    </div>
+    <div class="proc__side">
+      <dl class="readout">
+        <div><dt>stage</dt><dd id="paName" class="num">z</dd></div>
+        <div><dt>shape</dt><dd id="paShape" class="num">2</dd></div>
+        <div><dt>values</dt><dd id="paCount" class="num">2</dd></div>
+      </dl>
+      <input type="range" id="paStep" min="0" max="5" value="0" step="1"
+             aria-label="Step through the decoder layers">
+      <div class="proc__ends"><span>z</span><span>image</span></div>
+      <p class="cmp__note" id="paNote">
+        One pass. Six stages. The decoder is given only these two numbers and expands them,
+        layer by layer, until they are an image.
+      </p>
+    </div>
+  </div>
+  <div class="lrow" id="paRow"></div>
+</section>
+
+<!-- ─────────── CHANNEL B ─────────── -->
+<section class="proc proc--dif" aria-labelledby="pb-title">
+  <div class="proc__head">
+    <span class="channel__tag">Channel B · diffusion model</span>
+    <h2 id="pb-title">The reverse process denoises 1024 numbers, 200 times</h2>
+  </div>
+
+  <div class="proc__grid">
+    <div class="plate">
+      <canvas id="pbImage" width="240" height="240"
+              aria-label="Diffusion state at the current timestep"></canvas>
+    </div>
+    <div class="proc__side">
+      <div class="views" role="group" aria-label="Choose what to display">
+        <button class="view is-active" data-view="reverse">
+          <span class="view__sym">x<sub>t</sub></span><span class="view__txt">noisy image</span>
+        </button>
+        <button class="view" data-view="eps">
+          <span class="view__sym">&epsilon;&#770;</span><span class="view__txt">predicted noise</span>
+        </button>
+        <button class="view" data-view="x0">
+          <span class="view__sym">x&#770;<sub>0</sub></span><span class="view__txt">implied clean image</span>
+        </button>
+      </div>
+      <dl class="readout">
+        <div><dt>timestep</dt><dd id="pbT" class="num">t = 199</dd></div>
+        <div><dt>shape</dt><dd class="num">32×32×1</dd></div>
+        <div><dt>values</dt><dd class="num">1024</dd></div>
+      </dl>
+      <input type="range" id="pbStep" min="0" max="199" value="0" step="1"
+             aria-label="Step through the reverse diffusion process">
+      <div class="proc__ends"><span>noise</span><span>image</span></div>
+      <p class="cmp__note" id="pbNote">
+        The state at step <em>t</em> — the same size as the finished image, never compressed.
+      </p>
+    </div>
+  </div>
+  <div class="sched"><canvas id="pbSched" width="880" height="120"
+       aria-label="Alpha-bar schedule with the current timestep marked"></canvas></div>
 </section>
 
 <section class="compare" aria-labelledby="cmp-title">
@@ -125,7 +141,7 @@
     <h2 id="cmp-title">Where the randomness lives</h2>
     <p class="standfirst">
       Both models are random, but the randomness enters at different points. Nothing below is
-      cherry-picked — these are the same networks you have been scrubbing through.
+      cherry-picked — these are the same networks shown above.
     </p>
   </div>
 
@@ -162,42 +178,6 @@
       </p>
     </div>
 
-  </div>
-</section>
-
-<section class="regions" aria-labelledby="reg-title">
-  <div class="compare__head">
-    <p class="eyebrow">Meaning has a location</p>
-    <h2 id="reg-title">Different digits, different regions</h2>
-    <p class="standfirst">
-      Five thousand test images, encoded and plotted by their two latent coordinates.
-      <strong>Click anywhere on the map</strong> — or focus it and use the arrow keys — to
-      generate from that point.
-    </p>
-  </div>
-
-  <div class="regions__grid">
-    <div class="regions__map">
-      <canvas id="regMap" width="440" height="440" tabindex="0"
-              aria-label="Latent space scatter, coloured by digit class. Click to generate from a point."></canvas>
-      <div class="legend" id="regLegend" aria-label="Digit colours"></div>
-    </div>
-
-    <div class="regions__out">
-      <div class="plate">
-        <canvas id="regImage" width="200" height="200"
-                aria-label="Image decoded from the selected latent vector"></canvas>
-      </div>
-      <dl class="readout">
-        <div><dt>you chose</dt><dd id="regZ" class="num">z = (0.00, 0.00)</dd></div>
-      </dl>
-      <p class="regions__verdict" id="regVerdict">Click the map to generate an image.</p>
-      <p class="cmp__note">
-        Nothing here is a lookup. The decoder is given only these two numbers and produces the
-        image from them — which is what it means to say the initial vector
-        <em>conditions</em> what gets generated.
-      </p>
-    </div>
   </div>
 </section>
 
@@ -248,7 +228,30 @@
     </p>
   </div>
 
-  <p class="verdict" id="verdict"></p>
+  <p class="verdict" id="verdictLayers"></p>
+</section>
+
+<section class="dims" aria-labelledby="dims-title">
+  <div class="compare__head">
+    <p class="eyebrow">How small can it get?</p>
+    <h2 id="dims-title">Changing the size of the latent space</h2>
+    <p class="standfirst">
+      The same model, trained four times, differing only in how many numbers the encoder is
+      allowed to keep. Everything else — architecture, data, training — is held fixed.
+    </p>
+  </div>
+
+  <div class="dims__views views" role="group" aria-label="What to show">
+    <button class="view is-active" data-dims="recon">
+      <span class="view__txt">reconstructions</span>
+    </button>
+    <button class="view" data-dims="prior">
+      <span class="view__txt">samples from the prior</span>
+    </button>
+  </div>
+
+  <div class="dims__rows" id="dimsRows"></div>
+  <p class="verdict" id="dimsVerdict"></p>
 </section>
 
 <footer class="foot">
