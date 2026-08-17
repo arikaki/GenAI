@@ -1,0 +1,79 @@
+{
+ "tile": 40,
+ "grid": 12,
+ "range": [
+  -3.0,
+  3.0
+ ],
+ "model": "vae_decoder",
+ "stations": [
+  {
+   "name": "z",
+   "type": "LatentVector",
+   "shape": [
+    2
+   ],
+   "elements": 2,
+   "spatial": false,
+   "branch": "main"
+  },
+  {
+   "name": "dense_1",
+   "type": "Dense",
+   "shape": [
+    3136
+   ],
+   "elements": 3136,
+   "spatial": false,
+   "branch": "main"
+  },
+  {
+   "name": "reshape",
+   "type": "Reshape",
+   "shape": [
+    7,
+    7,
+    64
+   ],
+   "elements": 3136,
+   "spatial": true,
+   "branch": "main"
+  },
+  {
+   "name": "conv2d_transpose",
+   "type": "Conv2DTranspose",
+   "shape": [
+    14,
+    14,
+    64
+   ],
+   "elements": 12544,
+   "spatial": true,
+   "branch": "main"
+  },
+  {
+   "name": "conv2d_transpose_1",
+   "type": "Conv2DTranspose",
+   "shape": [
+    28,
+    28,
+    32
+   ],
+   "elements": 25088,
+   "spatial": true,
+   "branch": "main"
+  },
+  {
+   "name": "conv2d_transpose_2",
+   "type": "Conv2DTranspose",
+   "shape": [
+    28,
+    28,
+    1
+   ],
+   "elements": 784,
+   "spatial": true,
+   "branch": "main"
+  }
+ ]
+}

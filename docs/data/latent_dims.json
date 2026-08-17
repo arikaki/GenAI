@@ -1,0 +1,42 @@
+{
+ "dims": [
+  {
+   "dim": 1,
+   "recon": 165.42,
+   "kl": 3.65,
+   "total": 169.07,
+   "compression": 784.0,
+   "params": 482563
+  },
+  {
+   "dim": 2,
+   "recon": 143.63,
+   "kl": 6.1,
+   "total": 149.74,
+   "compression": 392.0,
+   "params": 485957
+  },
+  {
+   "dim": 8,
+   "recon": 89.33,
+   "kl": 16.96,
+   "total": 106.29,
+   "compression": 98.0,
+   "params": 506321
+  },
+  {
+   "dim": 32,
+   "recon": 76.94,
+   "kl": 23.84,
+   "total": 100.78,
+   "compression": 24.5,
+   "params": 587777
+  }
+ ],
+ "cols": 12,
+ "tile": 28,
+ "pad": 1,
+ "epochs": 8,
+ "hidden": 128,
+ "note": "recon sheet row 0 is the originals; prior sheet has no originals row"
+}
