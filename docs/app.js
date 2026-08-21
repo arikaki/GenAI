@@ -269,13 +269,20 @@ async function main(){
     setDraw(z[0] + moves[e.key][0], z[1] + moves[e.key][1]);
   });
 
-  $('newDraw').addEventListener('click', () => {
-    seed = (seed + 1) % SEEDS;                       // a new draw for both channels
-    const gauss = () => {                            // Box-Muller, clamped to the map
-      const u = Math.random() || 1e-9, v = Math.random();
-      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-    };
-    setDraw(gauss(), gauss());
+  /* Two independent draws, one button each.
+     A single button re-rolled both at once, which implied the 2-D vector and
+     the 32x32 noise field were the same sample — or at least the same digit
+     class. They are unrelated, and one control taught that falsehood. */
+  const gauss = () => {                              // Box-Muller
+    const u = Math.random() || 1e-9, v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  };
+
+  $('newDrawVae').addEventListener('click', () => setDraw(gauss(), gauss()));
+
+  $('newDrawDif').addEventListener('click', () => {
+    seed = (seed + 1) % SEEDS;
+    paintStartNoise();
     paintChannelB();
   });
 
@@ -304,6 +311,7 @@ async function main(){
   paintChannelB();
   buildLayers();
   buildDims();
+  buildElbo();
   veil.classList.add('is-gone');
 
 
@@ -377,6 +385,65 @@ async function main(){
       'latent space that can be <strong>drawn</strong>.';
 
     fill();
+  }
+
+  /* ── ELBO: the two loss terms, over training ─────────────
+     Reconstruction and KL live on very different scales (hundreds vs
+     single digits), so a shared axis would flatten KL to a line near
+     zero. Each gets its own axis, coloured to match its curve. */
+  async function buildElbo(){
+    let losses;
+    try { losses = await loadJSON('vae_losses.json'); }
+    catch (e) { document.querySelector('.elbo').style.display = 'none'; return; }
+
+    const c = $('elboChart'), g = c.getContext('2d');
+    const W = c.width, H = c.height, padL = 42, padR = 42, padT = 16, padB = 26;
+    const n = losses.length;
+    const recon = losses.map(r => r.recon), kl = losses.map(r => r.kl);
+    const rMin = Math.min(...recon), rMax = Math.max(...recon);
+    const kMin = Math.min(...kl), kMax = Math.max(...kl);
+    const RECON_C = '#B4436C', KL_C = '#16808E';
+
+    const px  = i => padL + (n === 1 ? 0 : i / (n - 1) * (W - padL - padR));
+    const pyR = v => (H - padB) - (rMax > rMin ? (v - rMin) / (rMax - rMin) : .5) * (H - padT - padB);
+    const pyK = v => (H - padB) - (kMax > kMin ? (v - kMin) / (kMax - kMin) : .5) * (H - padT - padB);
+
+    g.clearRect(0, 0, W, H);
+    g.strokeStyle = '#E3E8ED'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(padL, H - padB); g.lineTo(W - padR, H - padB); g.stroke();
+
+    function line(vals, py, color){
+      g.strokeStyle = color; g.lineWidth = 2;
+      g.beginPath();
+      vals.forEach((v, i) => i ? g.lineTo(px(i), py(v)) : g.moveTo(px(i), py(v)));
+      g.stroke();
+      g.fillStyle = color;
+      vals.forEach((v, i) => { g.beginPath(); g.arc(px(i), py(v), 3, 0, Math.PI * 2); g.fill(); });
+    }
+    line(recon, pyR, RECON_C);
+    line(kl, pyK, KL_C);
+
+    g.font = '11px ui-monospace, Consolas, monospace';
+    g.fillStyle = RECON_C; g.textAlign = 'left';
+    g.fillText(rMax.toFixed(0), 4, pyR(rMax) + 4);
+    g.fillText(rMin.toFixed(0), 4, pyR(rMin) + 4);
+    g.fillStyle = KL_C; g.textAlign = 'right';
+    g.fillText(kMax.toFixed(1), W - 4, pyK(kMax) + 4);
+    g.fillText(kMin.toFixed(1), W - 4, pyK(kMin) + 4);
+    g.fillStyle = '#939EA9'; g.textAlign = 'center';
+    losses.forEach((r, i) => g.fillText('epoch ' + r.epoch, px(i), H - 8));
+
+    const first = losses[0], last = losses[n - 1];
+    const reconDrop = Math.round((1 - last.recon / first.recon) * 100);
+    const klRise = Math.round((last.kl / first.kl - 1) * 100);
+    $('verdictElbo').innerHTML =
+      'Over ' + n + ' epochs, reconstruction loss fell <strong>' + reconDrop + '%</strong> (' +
+      first.recon.toFixed(0) + ' → ' + last.recon.toFixed(0) + '), while KL divergence ' +
+      '<strong>rose ' + klRise + '%</strong> (' + first.kl.toFixed(1) + ' → ' + last.kl.toFixed(1) +
+      '). They move in opposite directions because reconstruction dominates the total by roughly ' +
+      Math.round(first.recon / first.kl) + '×: pushing it down means encoding more about each ' +
+      'image, which is exactly what pulls the encoder\'s distribution away from the standard ' +
+      'normal it is penalised for leaving.';
   }
 
   /* ── I5: how the input is compressed (unchanged) ────────── */

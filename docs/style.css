@@ -55,15 +55,11 @@ body{
   color:var(--muted);
 }
 .standfirst strong{color:var(--ink);font-weight:640}
-
-/* ─── shared: channel tag ──────────────────────────────── */
-
 .channel__tag{
   font-family:var(--mono);
   font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
   color:var(--chan);
 }
-
 /* the dark specimen plate */
 .plate{
   background:var(--plate);
@@ -76,7 +72,6 @@ body{
   image-rendering:pixelated;
   display:block;
 }
-
 /* numeric readout strip */
 .readout{
   margin:0;display:flex;gap:1.5rem;flex-wrap:wrap;
@@ -96,7 +91,6 @@ body{
   font-variant-numeric:tabular-nums;
   color:var(--chan,var(--ink));
 }
-
 /* ─── view toggle (I4) ─────────────────────────────────── */
 
 .views{display:grid;grid-template-columns:repeat(3,1fr);gap:.35rem}
@@ -120,6 +114,11 @@ body{
 
 .view__sym{font-family:var(--mono);font-size:.95rem;font-weight:640}
 .view__txt{font-size:.62rem;letter-spacing:.02em;text-align:center;line-height:1.2}
+
+/* ─── the shared control — signature element ───────────── */
+
+
+/* the tell — what just happened, one line per channel */
 
 /* ─── I2 · where the randomness lives ──────────────────── */
 
@@ -334,13 +333,11 @@ body{
 /* ─── responsive ───────────────────────────────────────── */
 
 @media (max-width:760px){
-  .compare__grid,.start__grid,.proc__grid{grid-template-columns:1fr}
-}
+  .compare__grid,.start__grid,.proc__grid{grid-template-columns:1fr}}
 
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important;animation:none !important}
 }
-
 
 /* ─── the shared start ─────────────────────────────────── */
 
@@ -489,3 +486,30 @@ body{
 @media (max-width:760px){
   .dimrow{grid-template-columns:1fr;gap:.4rem}
 }
+
+.draw .ghost{margin-top:.75rem}
+
+/* ─── the two loss terms, over training ─────────────────── */
+
+.elbo{
+  max-width:70rem;margin:clamp(2.5rem,6vw,4rem) auto 0;
+  padding:0 var(--gutter);
+}
+
+.elbo__chart{
+  background:#fff;border:1px solid var(--rule);border-radius:3px;
+  padding:clamp(.75rem,1.5vw,1.1rem);
+}
+.elbo__chart canvas{width:100%;height:auto;display:block}
+
+.elbo__legend{
+  display:flex;gap:1.25rem;margin-top:.6rem;padding-top:.6rem;
+  border-top:1px solid var(--rule);
+}
+.elbo__key{
+  display:inline-flex;align-items:center;gap:.35rem;
+  font-family:var(--mono);font-size:.68rem;color:var(--muted);
+}
+.elbo__key i{width:.7rem;height:.7rem;border-radius:1px;display:block}
+.elbo__key--recon i{background:var(--vae)}
+.elbo__key--kl i{background:var(--dif)}
