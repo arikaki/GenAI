@@ -24,8 +24,9 @@
     <p class="eyebrow">Step one · the same idea, two sizes</p>
     <h2 id="start-title">Draw a random vector</h2>
     <p class="standfirst">
-      Click the map to choose a draw — or use the arrow keys. The map shows where five thousand
-      real images land, coloured by digit.
+      Each model gets its own draw, and the two are <strong>independent</strong>. Click the map —
+      or use the arrow keys — to choose the latent vector; use the buttons to re-roll either draw
+      on its own. The map shows where five thousand real images land, coloured by digit.
     </p>
   </div>
 
@@ -39,21 +40,22 @@
 
     <div class="start__cards">
       <div class="draw draw--vae">
-        <span class="channel__tag">for Channel A</span>
+        <span class="channel__tag">for the Variational Autoencoder</span>
         <h3 class="draw__title">2 numbers</h3>
         <p class="draw__val num" id="startZ">z = (0.00, 0.00)</p>
         <p class="draw__note">The whole starting vector, written out. It fits on one line.</p>
+        <button class="ghost" id="newDrawVae">new latent vector</button>
       </div>
 
       <div class="draw draw--dif">
-        <span class="channel__tag">for Channel B</span>
+        <span class="channel__tag">for the Diffusion Model</span>
         <h3 class="draw__title">1024 numbers</h3>
         <div class="draw__tile"><canvas id="startNoise" width="128" height="128"
              aria-label="The 1024-dimensional starting noise, shown as a 32 by 32 image"></canvas></div>
         <p class="draw__note">The same kind of draw, one value per pixel. It can only be shown as a picture.</p>
+        <button class="ghost" id="newDrawDif">new noise image</button>
       </div>
 
-      <button class="ghost" id="newDraw">new draw</button>
     </div>
   </div>
 
@@ -61,13 +63,16 @@
     Both are samples from the <strong>same distribution</strong>. The difference is size:
     the VAE's draw has <strong>2</strong> dimensions, the diffusion model's has
     <strong>1024</strong> — one for every pixel of the image it will become.
+    They are drawn <strong>independently</strong>: the noise field is not an encoding of the digit
+    on the left, and there is no correspondence between the two. Re-roll them separately to see
+    that each model's result depends only on its own draw.
   </p>
 </section>
 
 <!-- ─────────── CHANNEL A ─────────── -->
 <section class="proc proc--vae" aria-labelledby="pa-title">
   <div class="proc__head">
-    <span class="channel__tag">Channel A · variational autoencoder</span>
+    <span class="channel__tag">Variational Autoencoder</span>
     <h2 id="pa-title">The decoder expands 2 numbers into an image</h2>
   </div>
 
@@ -97,7 +102,7 @@
 <!-- ─────────── CHANNEL B ─────────── -->
 <section class="proc proc--dif" aria-labelledby="pb-title">
   <div class="proc__head">
-    <span class="channel__tag">Channel B · diffusion model</span>
+    <span class="channel__tag">Diffusion Model</span>
     <h2 id="pb-title">The reverse process denoises 1024 numbers, 200 times</h2>
   </div>
 
@@ -195,7 +200,6 @@
 
   <div class="lblock lblock--vae">
     <div class="lblock__head">
-      <span class="channel__tag">Channel A</span>
       <h3 class="cmp__title">VAE encoder</h3>
     </div>
     <div class="lrow" id="lrowVae"></div>
@@ -209,7 +213,6 @@
 
   <div class="lblock lblock--dif">
     <div class="lblock__head">
-      <span class="channel__tag">Channel B</span>
       <h3 class="cmp__title">Diffusion U-Net</h3>
       <div class="views views--inline" role="group" aria-label="How many stations to show">
         <button class="view is-active" data-stations="key">
@@ -229,6 +232,29 @@
   </div>
 
   <p class="verdict" id="verdictLayers"></p>
+</section>
+
+<section class="elbo" aria-labelledby="elbo-title">
+  <div class="compare__head">
+    <p class="eyebrow">Training, not just the result</p>
+    <h2 id="elbo-title">Reconstruction and KL pull in opposite directions</h2>
+    <p class="standfirst">
+      The VAE minimises one number, but that number is a sum of two terms that do not agree:
+      reconstruction error, and how far the encoder's distribution strays from a standard normal.
+      This is the actual training run behind every figure on this page, tracked epoch by epoch.
+    </p>
+  </div>
+
+  <div class="elbo__chart">
+    <canvas id="elboChart" width="880" height="260"
+            aria-label="Reconstruction loss and KL divergence over training epochs"></canvas>
+    <div class="elbo__legend">
+      <span class="elbo__key elbo__key--recon"><i></i>reconstruction loss</span>
+      <span class="elbo__key elbo__key--kl"><i></i>KL divergence</span>
+    </div>
+  </div>
+
+  <p class="verdict" id="verdictElbo"></p>
 </section>
 
 <section class="dims" aria-labelledby="dims-title">
