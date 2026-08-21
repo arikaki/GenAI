@@ -487,6 +487,71 @@ body{
   .dimrow{grid-template-columns:1fr;gap:.4rem}
 }
 
+/* ─── T25 · embeddings across latent dimensions ─────────── */
+
+.embed{max-width:70rem;margin:clamp(2.5rem,6vw,4rem) auto 0;padding:0 var(--gutter)}
+
+.embed__panels{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:clamp(1rem,2.5vw,1.75rem);
+}
+
+.embed__panel{
+  background:var(--panel);border:1px solid var(--rule);
+  border-left:3px solid var(--vae);border-radius:3px;
+  padding:clamp(.85rem,1.6vw,1.15rem);
+  display:flex;flex-direction:column;gap:.6rem;
+}
+
+.embed__panel canvas{
+  width:100%;height:auto;display:block;
+  background:#fff;border-radius:2px;
+}
+
+.embed__head{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem}
+.embed__dim{font-family:var(--mono);font-weight:660;font-size:.9rem;color:var(--ink)}
+.embed__stat{font-family:var(--mono);font-size:.6rem;color:var(--muted);text-align:right;line-height:1.4}
+
+.embed__interact{
+  display:flex;gap:1.25rem;align-items:flex-start;margin-top:1.25rem;flex-wrap:wrap;
+}
+
+.embed__strip{
+  flex:1 1 20rem;
+  display:flex;flex-wrap:wrap;gap:.4rem;align-content:flex-start;
+  background:var(--plate);border-radius:2px;padding:.6rem;
+}
+.embed__pick{
+  appearance:none;cursor:pointer;padding:2px;
+  background:transparent;border:2px solid transparent;border-radius:2px;line-height:0;
+  transition:border-color .12s ease;
+}
+.embed__pick canvas{display:block;image-rendering:pixelated;width:36px;height:36px}
+.embed__pick:hover{border-color:var(--muted)}
+.embed__pick:focus-visible{outline:2px solid var(--vae);outline-offset:1px}
+.embed__pick.is-active{border-color:var(--vae)}
+
+.embed__draw{
+  flex:0 0 auto;display:flex;flex-direction:column;gap:.5rem;
+}
+#drawPad{
+  width:200px;height:200px;display:block;
+  background:#000;border-radius:2px;cursor:crosshair;touch-action:none;
+}
+.embed__draw_row{display:flex;align-items:center;gap:.6rem}
+.embed__draw_row .ghost{align-self:auto}
+.draw__status{
+  margin:0;font-family:var(--mono);font-size:.62rem;color:var(--muted);line-height:1.4;
+}
+.draw__status.is-ok{color:var(--dif)}
+.draw__status.is-bad{color:var(--vae)}
+
+@media (max-width:760px){
+  .embed__panels{grid-template-columns:1fr}
+  .embed__interact{flex-direction:column}
+  #drawPad{width:100%;height:auto;aspect-ratio:1}
+}
+
 .draw .ghost{margin-top:.75rem}
 
 /* ─── the two loss terms, over training ─────────────────── */
