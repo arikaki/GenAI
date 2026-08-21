@@ -280,12 +280,43 @@
   <p class="verdict" id="dimsVerdict"></p>
 </section>
 
+<section class="embed" aria-labelledby="embed-title">
+  <div class="compare__head">
+    <p class="eyebrow">One digit · three latent spaces</p>
+    <h2 id="embed-title">Where the same image lands, at three sizes</h2>
+    <p class="standfirst">
+      Three independently trained encoders, identical except for how many numbers each keeps.
+      Pick a digit below and watch where it lands in each — projected to two dimensions with
+      PCA, since only a 2-D space can be plotted directly.
+    </p>
+  </div>
+
+  <div class="embed__panels" id="embedPanels"></div>
+
+  <div class="embed__interact">
+    <div class="embed__strip" id="embedStrip"></div>
+    <div class="embed__draw">
+      <canvas id="drawPad" width="200" height="200"
+              aria-label="Draw a digit here — it is encoded live by all three models above"></canvas>
+      <div class="embed__draw_row">
+        <button class="ghost" id="drawClear">clear</button>
+        <p class="draw__status" id="drawStatus"></p>
+      </div>
+    </div>
+  </div>
+
+  <p class="verdict" id="embedVerdict"></p>
+</section>
+
 <footer class="foot">
-  <p>MNIST-scale models trained for this project. All outputs precomputed — nothing runs at view time.</p>
+  <p>MNIST-scale models trained for this project. Everything above is precomputed except the
+    drawing pad, which runs live in your browser — the encoders are bundled here as
+    TensorFlow.js models, so it works with no network connection.</p>
 </footer>
 
 <div class="loading" id="loading"><span>loading model outputs…</span></div>
 
+<script src="vendor/tf.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
