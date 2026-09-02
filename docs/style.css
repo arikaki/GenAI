@@ -512,6 +512,13 @@ body{
 .embed__dim{font-family:var(--mono);font-weight:660;font-size:.9rem;color:var(--ink)}
 .embed__stat{font-family:var(--mono);font-size:.6rem;color:var(--muted);text-align:right;line-height:1.4}
 
+.embed__recon_wrap{display:flex;align-items:center;gap:.5rem}
+.embed__panel canvas.embed__recon{
+  width:32px;height:32px;image-rendering:pixelated;
+  background:#000;border-radius:2px;flex:0 0 auto;
+}
+.embed__recon_label{font-family:var(--mono);font-size:.58rem;color:var(--muted)}
+
 .embed__interact{
   display:flex;gap:1.25rem;align-items:flex-start;margin-top:1.25rem;flex-wrap:wrap;
 }
