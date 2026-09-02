@@ -21,11 +21,10 @@
 <!-- ─────────── THE SHARED START ─────────── -->
 <section class="start" aria-labelledby="start-title">
   <div class="compare__head">
-    <p class="eyebrow">Step one · the same idea, two sizes</p>
+    <p class="eyebrow">Starting with the same idea, two sizes</p>
     <h2 id="start-title">Draw a random vector</h2>
     <p class="standfirst">
-      Each model gets its own draw, and the two are <strong>independent</strong>. Click the map —
-      or use the arrow keys — to choose the latent vector; use the buttons to re-roll either draw
+      Each model gets its own draw, and the two are <strong>independent</strong>. Click the map or use the arrow keys to choose the latent vector; use the buttons to re-roll either draw
       on its own. The map shows where five thousand real images land, coloured by digit.
     </p>
   </div>
@@ -132,7 +131,7 @@
              aria-label="Step through the reverse diffusion process">
       <div class="proc__ends"><span>noise</span><span>image</span></div>
       <p class="cmp__note" id="pbNote">
-        The state at step <em>t</em> — the same size as the finished image, never compressed.
+        The state at step <em>t</em>, the same size as the finished image, never compressed.
       </p>
     </div>
   </div>
@@ -146,7 +145,7 @@
     <h2 id="cmp-title">Where the randomness lives</h2>
     <p class="standfirst">
       Both models are random, but the randomness enters at different points. Nothing below is
-      cherry-picked — these are the same networks shown above.
+      cherry-picked these are the same networks shown above.
     </p>
   </div>
 
@@ -163,7 +162,7 @@
       </div>
       <button class="ghost" id="vaeNext">show another image</button>
       <p class="cmp__note">
-        The encoder does not output a point — it outputs a <em>distribution</em>. Encode the same
+        The encoder does not output a point it outputs a <em>distribution</em>. Encode the same
         image five times and you get five slightly different z, so five slightly different
         reconstructions. Only the second uses the mean, with no sampling at all.
       </p>
@@ -178,7 +177,7 @@
       </div>
       <p class="cmp__note">
         Same trained network, same schedule, same number of steps. The only difference is the
-        random noise each run started from — and that alone decides which digit appears.
+        random noise each run started from and that alone decides which digit appears.
         Drag the slider above to watch all three resolve at once.
       </p>
     </div>
@@ -227,7 +226,7 @@
     <dl class="lsum" id="lsumDif"></dl>
     <p class="cmp__note">
       The spatial size falls to 4×4 and then climbs back to 32×32. The network is shaped like an
-      hourglass, but it is a <em>wide</em> one — see the figure below.
+      hourglass, but it is a <em>wide</em> one,  see the figure below.
     </p>
   </div>
 
@@ -263,7 +262,7 @@
     <h2 id="dims-title">Changing the size of the latent space</h2>
     <p class="standfirst">
       The same model, trained four times, differing only in how many numbers the encoder is
-      allowed to keep. Everything else — architecture, data, training — is held fixed.
+      allowed to keep. Everything else like architecture, data, training are held fixed.
     </p>
   </div>
 
@@ -286,7 +285,8 @@
     <h2 id="embed-title">Where the same image lands, at three sizes</h2>
     <p class="standfirst">
       Three independently trained encoders, identical except for how many numbers each keeps.
-      Pick a digit below and watch where it lands in each — projected to two dimensions with
+      Pick a digit below and watch where it lands in each of the three latent spaces, then
+      projected to two dimensions with
       PCA, since only a 2-D space can be plotted directly.
     </p>
   </div>

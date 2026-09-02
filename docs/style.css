@@ -511,6 +511,7 @@ body{
 .embed__head{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem}
 .embed__dim{font-family:var(--mono);font-weight:660;font-size:.9rem;color:var(--ink)}
 .embed__stat{font-family:var(--mono);font-size:.6rem;color:var(--muted);text-align:right;line-height:1.4}
+.embed__stat.is-bad{color:var(--dif)}
 
 .embed__recon_wrap{display:flex;align-items:center;gap:.5rem}
 .embed__panel canvas.embed__recon{
@@ -528,6 +529,7 @@ body{
   display:flex;flex-wrap:wrap;gap:.4rem;align-content:flex-start;
   background:var(--plate);border-radius:2px;padding:.6rem;
 }
+
 .embed__pick{
   appearance:none;cursor:pointer;padding:2px;
   background:transparent;border:2px solid transparent;border-radius:2px;line-height:0;
