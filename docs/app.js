@@ -484,9 +484,27 @@ async function main(){
       canvas.width = 300; canvas.height = 300;
       canvas.setAttribute('aria-label',
         'Latent space, ' + d.dim + ' dimensions, projected to 2-D with PCA');
-      el.append(head, canvas);
+
+      /* reconstruction thumbnail: what this dim's decoder makes of the live
+         drawing's z. Hidden until Stage 2 has something to show — picks have
+         no stored z, only their 2-D projection, so this stays empty for them. */
+      const reconWrap = document.createElement('div');
+      reconWrap.className = 'embed__recon_wrap';
+      reconWrap.hidden = true;
+      const reconCanvas = document.createElement('canvas');
+      reconCanvas.width = reconCanvas.height = 28;
+      reconCanvas.className = 'embed__recon';
+      const reconLabel = document.createElement('span');
+      reconLabel.className = 'embed__recon_label';
+      reconLabel.textContent = 'reconstructed';
+      reconWrap.append(reconCanvas, reconLabel);
+
+      el.append(head, canvas, reconWrap);
       panelsEl.appendChild(el);
-      return { dim: d.dim, ctx: canvas.getContext('2d'), w: canvas.width, h: canvas.height };
+      return {
+        dim: d.dim, ctx: canvas.getContext('2d'), w: canvas.width, h: canvas.height,
+        reconCtx: reconCanvas.getContext('2d'), reconWrap,
+      };
     });
 
     /* Each dim gets its own padded axis range — the scales are not comparable
@@ -532,6 +550,19 @@ async function main(){
     }
     const paintAll = () => panels.forEach(paintPanel);
 
+    function setRecon(dim, pixels784){
+      const p = panels.find(pp => pp.dim === dim);
+      if (!p) return;
+      const img = p.reconCtx.createImageData(28, 28);
+      for (let i = 0; i < 784; i++){
+        const v = Math.round(Math.min(1, Math.max(0, pixels784[i])) * 255);
+        img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+      }
+      p.reconCtx.putImageData(img, 0, 0);
+      p.reconWrap.hidden = false;
+    }
+    const clearRecon = () => panels.forEach(p => { p.reconWrap.hidden = true; });
+
     const stripEl = $('embedStrip');
     stripEl.innerHTML = '';
     picks.picks.forEach((pk, i) => {
@@ -546,6 +577,7 @@ async function main(){
         selected = pk;
         stripEl.querySelectorAll('.embed__pick').forEach(b => b.classList.remove('is-active'));
         btn.classList.add('is-active');
+        clearRecon();
         paintAll();
       });
       stripEl.appendChild(btn);
@@ -566,6 +598,7 @@ async function main(){
     return {
       pca, picks, picksImg,
       select(pk){ selected = pk; paintAll(); },
+      setRecon, clearRecon,
     };
   }
 
@@ -638,6 +671,14 @@ async function main(){
     return z;
   }
 
+  async function decode(z, model){
+    const t = tf.tensor2d([z]);
+    const rt = model.predict(t);
+    const pixels = await rt.data();
+    t.dispose(); rt.dispose();
+    return pixels;
+  }
+
   async function buildDraw(embed){
     const drawSection = document.querySelector('.embed__interact');
     if (!embed || typeof tf === 'undefined'){ drawSection.style.display = 'none'; return; }
@@ -653,6 +694,17 @@ async function main(){
       return;
     }
 
+    /* Reconstructions are the first thing on the cut list — nice, not
+       load-bearing — so a failure here just leaves the thumbnails hidden
+       rather than taking down live positioning. */
+    let decModels = null;
+    try {
+      decModels = {};
+      for (const d of embed.pca.dims){
+        decModels[d.dim] = await tf.loadLayersModel('tfjs/dim' + d.dim + '/decoder/model.json');
+      }
+    } catch (e) { decModels = null; }
+
     const statusEl = $('drawStatus');
     const byDim = {};
     embed.pca.dims.forEach(d => { byDim[d.dim] = d; });
@@ -662,6 +714,16 @@ async function main(){
       for (const d of embed.pca.dims){
         const z = await encode(pixels784, models[d.dim]);
         proj[d.dim] = project(z, d.mean, d.components);
+      }
+      return proj;
+    }
+
+    async function liveProjectAndReconstruct(pixels784){
+      const proj = {};
+      for (const d of embed.pca.dims){
+        const z = await encode(pixels784, models[d.dim]);
+        proj[d.dim] = project(z, d.mean, d.components);
+        if (decModels) embed.setRecon(d.dim, await decode(z, decModels[d.dim]));
       }
       return proj;
     }
@@ -722,7 +784,7 @@ async function main(){
       dirty = false;
       const pixels = preprocessCanvas(pad);
       if (!pixels) return;
-      const proj = await liveProject(pixels);
+      const proj = await liveProjectAndReconstruct(pixels);
       embed.select({ label: null, proj });
     }
 
@@ -742,6 +804,7 @@ async function main(){
 
     $('drawClear').addEventListener('click', () => {
       pctx.fillStyle = '#000'; pctx.fillRect(0, 0, pad.width, pad.height);
+      embed.clearRecon();
       embed.select(embed.picks.picks[0]);
     });
   }
