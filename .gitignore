@@ -1,0 +1,6 @@
+.claude/
+lab/
+web/
+.venv_tfjs/
+__pycache__/
+.gitignore
