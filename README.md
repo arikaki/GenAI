@@ -9,7 +9,7 @@ visible rather than asserted: where the encoder is learned and where it is fixed
 actually predicts, and how one shared objective underlies both.
 
 > MSc project for *Generative AI for Human-Computer Interaction*, University of Regensburg.
-> Supervised by Prof. Dr.-Ing. Bernd Ludwig.
+> Supervised by Prof. Bernd Ludwig.
 
 **[→ Open the tool](https://arikaki.github.io/GenAI/)**
 
@@ -22,7 +22,7 @@ latent plane. On the diffusion side it advances one step along a 200-step chain 
 state is the same size as the finished image. The same user action produces two different kinds of
 motion, which is the point.
 
-**The diffusion panel can be switched between three views** the noisy state $x_t$, the network's
+**The diffusion panel can be switched between three views:** the noisy state $x_t$, the network's
 actual output $\hat{\epsilon}$, and the clean-image estimate $\hat{x}_0$ recovered from it. Moving
 the slider with $\hat{x}_0$ selected shows a blurred average sharpening into a digit, without the
 network ever having drawn an image.
@@ -32,9 +32,17 @@ five slightly different reconstructions, because the encoder emits a distributio
 point. Three reverse runs that differ only in their starting noise resolve into three different
 digits.
 
+**A third section compares latent space sizes.** Three VAEs, identical except for how many numbers
+the encoder keeps (2, 8, 32), each project a shared set of digits into two dimensions with PCA.
+Picking one moves its marker in all three panels at once, showing that the same image lands
+differently depending on how much room the encoder was given. A drawing pad lets you sketch your
+own digit — encoded live in the browser, run through the same bounding-box-crop and
+centre-of-mass-centring the training images went through, checked against a known digit's
+precomputed position before the pad is enabled.
+
 ## Running it locally
 
-The site is static and needs no build step, but it does need to be served over HTTP opening
+The site is static and needs no build step, but it does need to be served over HTTP: opening
 `index.html` directly from the file system will fail, because the page fetches its data as JSON.
 
 ```bash
@@ -45,12 +53,14 @@ python -m http.server 8000
 
 ## How it is built
 
-Nothing is computed at view time. There is no GPU dependency, no server, and no external API.
+Almost everything is precomputed. There is no server and no external API — the one exception is
+the free-hand drawing pad, which runs three small encoders live in the browser via a locally
+bundled TensorFlow.js, so it still works with no network connection.
 
-The VAE and diffusion models are small, trained from scratch on MNIST. Every output the page
-displays latent manifolds, reconstructions, forward and reverse trajectories, noise predictions,
-the variance schedule is precomputed and exported once as sprite sheets and JSON. The page reads
-those files and draws to canvas.
+The VAE and diffusion models are small, trained from scratch on MNIST. Every other output the page
+displays — latent manifolds, reconstructions, forward and reverse trajectories, noise predictions,
+the variance schedule, the per-dimension embedding scatters — is precomputed and exported once as
+sprite sheets and JSON. The page reads those files and draws to canvas.
 
 Sprite layout is never assumed by the front end: tile size, grid dimensions and column counts are
 all read from the accompanying JSON, so re-exporting with different settings does not break the
@@ -61,12 +71,17 @@ docs/              served by GitHub Pages
 ├── index.html
 ├── app.js
 ├── style.css
+├── vendor/        bundled TensorFlow.js (no CDN, works offline)
+├── tfjs/          the three drawing-pad encoders/decoders, converted for the browser
 └── data/          precomputed exports (sprite sheets + JSON)
 ```
 
-`T2_export_vae_cell.py` and `T2_export_diffusion_cell.py` are the export cells. They are appended
+`T2_export_vae_cell.py` and `T2_export_diffusion_cell.py` are the original export cells, appended
 to the trained model notebooks and run once; they reuse the trained weights and the notebooks' own
-schedule functions rather than reimplementing anything.
+schedule functions rather than reimplementing anything. Later ones (`T17`, `T19`, `T20`, `T23`)
+follow the same pattern for later sections. `T24_export embeddings.py` is the odd one out — it
+trains its own three models from scratch rather than reusing a notebook's, since the comparison
+needs encoders none of the other sections have.
 
 ## Status
 
