@@ -312,6 +312,7 @@ async function main(){
   buildLayers();
   buildDims();
   buildElbo();
+  buildEmbed().then(buildDraw);
   veil.classList.add('is-gone');
 
 
@@ -444,6 +445,368 @@ async function main(){
       Math.round(first.recon / first.kl) + '×: pushing it down means encoding more about each ' +
       'image, which is exactly what pulls the encoder\'s distribution away from the standard ' +
       'normal it is penalised for leaving.';
+  }
+
+  /* ── T25 Stage 1: the same image, three latent spaces ────
+     Three independently trained encoders (dim 2/8/32). Their raw z can't all be
+     plotted directly, so each panel shows a PCA projection to 2-D, precomputed
+     server-side against the *training* embeddings so picks land in the same
+     frame as the background scatter. Selection lives in the digit strip, not
+     the panels themselves: a click on an 8-D or 32-D scatter has no unique
+     inverse, unlike the raw 2-D map in the start section above. Optional —
+     hides itself if T24's export has not been run. */
+  async function buildEmbed(){
+    let pca, scatter, picks, picksImg;
+    try {
+      [pca, scatter, picks, picksImg] = await Promise.all([
+        loadJSON('embed_pca.json'), loadJSON('embed_scatter.json'),
+        loadJSON('embed_picks.json'), loadImage('embed_picks.png')
+      ]);
+    } catch (e) {
+      document.querySelector('.embed').style.display = 'none';
+      return;
+    }
+
+    const pct = v => v.toLocaleString('en-US', { style: 'percent', maximumFractionDigits: 0 });
+
+    const panelsEl = $('embedPanels');
+    panelsEl.innerHTML = '';
+    const panels = pca.dims.map(d => {
+      const el = document.createElement('div');
+      el.className = 'embed__panel';
+      const head = document.createElement('div');
+      head.className = 'embed__head';
+      head.innerHTML =
+        '<span class="embed__dim">' + d.dim + (d.dim === 1 ? ' number' : ' numbers') + '</span>' +
+        '<span class="embed__stat">' + d.compression + '× compression<br>' +
+        pct(d.explained[0] + d.explained[1]) + ' of variance shown</span>';
+      const canvas = document.createElement('canvas');
+      canvas.width = 300; canvas.height = 300;
+      canvas.setAttribute('aria-label',
+        'Latent space, ' + d.dim + ' dimensions, projected to 2-D with PCA');
+
+      /* reconstruction thumbnail: what this dim's decoder makes of the live
+         drawing's z. Hidden until Stage 2 has something to show — picks have
+         no stored z, only their 2-D projection, so this stays empty for them. */
+      const reconWrap = document.createElement('div');
+      reconWrap.className = 'embed__recon_wrap';
+      reconWrap.hidden = true;
+      const reconCanvas = document.createElement('canvas');
+      reconCanvas.width = reconCanvas.height = 28;
+      reconCanvas.className = 'embed__recon';
+      const reconLabel = document.createElement('span');
+      reconLabel.className = 'embed__recon_label';
+      reconLabel.textContent = 'reconstructed';
+      reconWrap.append(reconCanvas, reconLabel);
+
+      el.append(head, canvas, reconWrap);
+      panelsEl.appendChild(el);
+      return {
+        dim: d.dim, ctx: canvas.getContext('2d'), w: canvas.width, h: canvas.height,
+        reconCtx: reconCanvas.getContext('2d'), reconWrap,
+      };
+    });
+
+    /* Each dim gets its own padded axis range — the scales are not comparable
+       across panels (that is the point: a 32-D space projected to 2-D spreads
+       differently than an 8-D one), so a shared range would misrepresent both. */
+    const ranges = {};
+    pca.dims.forEach(d => {
+      const pts = scatter[d.dim];
+      const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+      const lo = Math.min(...xs, ...ys), hi = Math.max(...xs, ...ys);
+      const pad = (hi - lo) * .08 || 1;
+      ranges[d.dim] = [lo - pad, hi + pad];
+    });
+
+    let selected = picks.picks[0];
+
+    function paintPanel(p){
+      const pts = scatter[p.dim], [lo, hi] = ranges[p.dim];
+      const toPx = (a, b) => [(a - lo) / (hi - lo) * p.w, p.h - (b - lo) / (hi - lo) * p.h];
+      const ctx = p.ctx;
+      ctx.clearRect(0, 0, p.w, p.h);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, p.w, p.h);
+      for (const pt of pts){
+        const [x, y] = toPx(pt[0], pt[1]);
+        ctx.fillStyle = CLASS_COLOURS[pt[2] % 10];
+        ctx.globalAlpha = .5;
+        ctx.fillRect(x - 1.4, y - 1.4, 2.8, 2.8);
+      }
+      ctx.globalAlpha = 1;
+      const proj = selected.proj[p.dim];
+      const [x, y] = toPx(proj[0], proj[1]);
+      const isLive = selected.label === null;
+      ctx.strokeStyle = 'rgba(16,23,32,.35)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, p.h);
+      ctx.moveTo(0, y); ctx.lineTo(p.w, y); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2);
+      /* a live drawing has no known label, so it gets a neutral accent marker
+         instead of a class colour — visually distinct from the picks, which
+         are always a known, coloured digit. */
+      ctx.fillStyle = isLive ? '#B4436C' : CLASS_COLOURS[selected.label % 10];
+      ctx.fill();
+      ctx.strokeStyle = isLive ? '#fff' : '#101720'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    const paintAll = () => panels.forEach(paintPanel);
+
+    function setRecon(dim, pixels784){
+      const p = panels.find(pp => pp.dim === dim);
+      if (!p) return;
+      const img = p.reconCtx.createImageData(28, 28);
+      for (let i = 0; i < 784; i++){
+        const v = Math.round(Math.min(1, Math.max(0, pixels784[i])) * 255);
+        img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+      }
+      p.reconCtx.putImageData(img, 0, 0);
+      p.reconWrap.hidden = false;
+    }
+    const clearRecon = () => panels.forEach(p => { p.reconWrap.hidden = true; });
+
+    const stripEl = $('embedStrip');
+    stripEl.innerHTML = '';
+    picks.picks.forEach((pk, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'embed__pick';
+      btn.setAttribute('aria-label', 'digit ' + pk.label);
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 36;
+      drawTile(cv.getContext('2d'), picksImg, i, 0, 28, 1);
+      btn.appendChild(cv);
+      btn.addEventListener('click', () => {
+        selected = pk;
+        stripEl.querySelectorAll('.embed__pick').forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        clearRecon();
+        paintAll();
+      });
+      stripEl.appendChild(btn);
+    });
+    stripEl.firstChild.classList.add('is-active');
+
+    const lo = pca.dims[0], hi = pca.dims[pca.dims.length - 1];
+    $('embedVerdict').innerHTML =
+      'The same image, encoded three times. Its position moves because each encoder learned a ' +
+      '<strong>different space</strong> — not because the image changed. Variance explained by ' +
+      'the two plotted components falls from <strong>' + pct(lo.explained[0] + lo.explained[1]) +
+      '</strong> at ' + lo.dim + ' dimensions to <strong>' + pct(hi.explained[0] + hi.explained[1]) +
+      '</strong> at ' + hi.dim + ' — the ' + hi.dim + '-D scatter looks more smeared for that ' +
+      'reason alone, not because the model is worse.';
+
+    paintAll();
+
+    return {
+      pca, picks, picksImg,
+      select(pk){ selected = pk; paintAll(); },
+      setRecon, clearRecon,
+    };
+  }
+
+  /* ── T25 Stage 2: draw free-hand, encode live ─────────────
+     MNIST digits are not raw drawings: each is cropped to its bounding box,
+     scaled so the longest side is 20px, then centred in a 28x28 field by
+     centre of mass (not bounding-box centre). A canvas drawing fed to the
+     encoder without this step lands outside the training distribution — the
+     embedding is meaningless. This replicates it in JS. */
+  function preprocessCanvas(srcCanvas){
+    const sw = srcCanvas.width, sh = srcCanvas.height;
+    const src = srcCanvas.getContext('2d').getImageData(0, 0, sw, sh).data;
+
+    let minX = sw, minY = sh, maxX = -1, maxY = -1;
+    for (let y = 0; y < sh; y++){
+      for (let x = 0; x < sw; x++){
+        if (src[(y * sw + x) * 4] > 12){   // red channel: white strokes on black
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) return null;   // nothing drawn
+
+    const bw = maxX - minX + 1, bh = maxY - minY + 1;
+    const scale = 20 / Math.max(bw, bh);
+    const rw = Math.max(1, Math.round(bw * scale)), rh = Math.max(1, Math.round(bh * scale));
+
+    const off = document.createElement('canvas');
+    off.width = rw; off.height = rh;
+    const octx = off.getContext('2d');
+    octx.imageSmoothingEnabled = true;
+    octx.drawImage(srcCanvas, minX, minY, bw, bh, 0, 0, rw, rh);
+    const scaled = octx.getImageData(0, 0, rw, rh).data;
+
+    let sumX = 0, sumY = 0, sumM = 0;
+    for (let y = 0; y < rh; y++){
+      for (let x = 0; x < rw; x++){
+        const v = scaled[(y * rw + x) * 4] / 255;
+        sumX += x * v; sumY += y * v; sumM += v;
+      }
+    }
+    const cx = sumM > 0 ? sumX / sumM : rw / 2;
+    const cy = sumM > 0 ? sumY / sumM : rh / 2;
+    const offX = Math.round(14 - cx), offY = Math.round(14 - cy);
+
+    const out = new Float32Array(28 * 28);
+    for (let y = 0; y < rh; y++){
+      const dy = y + offY;
+      if (dy < 0 || dy >= 28) continue;
+      for (let x = 0; x < rw; x++){
+        const dx = x + offX;
+        if (dx < 0 || dx >= 28) continue;
+        out[dy * 28 + dx] = scaled[(y * rw + x) * 4] / 255;
+      }
+    }
+    return out;
+  }
+
+  function project(zRaw, mean, components){
+    const centered = zRaw.map((v, i) => v - mean[i]);
+    return [0, 1].map(k => components[k].reduce((s, c, i) => s + c * centered[i], 0));
+  }
+
+  async function encode(pixels784, model){
+    const t = tf.tensor4d(pixels784, [1, 28, 28, 1]);
+    const zt = model.predict(t);
+    const z = Array.from(await zt.data());
+    t.dispose(); zt.dispose();
+    return z;
+  }
+
+  async function decode(z, model){
+    const t = tf.tensor2d([z]);
+    const rt = model.predict(t);
+    const pixels = await rt.data();
+    t.dispose(); rt.dispose();
+    return pixels;
+  }
+
+  async function buildDraw(embed){
+    const drawSection = document.querySelector('.embed__interact');
+    if (!embed || typeof tf === 'undefined'){ drawSection.style.display = 'none'; return; }
+
+    let models;
+    try {
+      models = {};
+      for (const d of embed.pca.dims){
+        models[d.dim] = await tf.loadLayersModel('tfjs/dim' + d.dim + '/encoder/model.json');
+      }
+    } catch (e) {
+      drawSection.style.display = 'none';
+      return;
+    }
+
+    /* Reconstructions are the first thing on the cut list — nice, not
+       load-bearing — so a failure here just leaves the thumbnails hidden
+       rather than taking down live positioning. */
+    let decModels = null;
+    try {
+      decModels = {};
+      for (const d of embed.pca.dims){
+        decModels[d.dim] = await tf.loadLayersModel('tfjs/dim' + d.dim + '/decoder/model.json');
+      }
+    } catch (e) { decModels = null; }
+
+    const statusEl = $('drawStatus');
+    const byDim = {};
+    embed.pca.dims.forEach(d => { byDim[d.dim] = d; });
+
+    async function liveProject(pixels784){
+      const proj = {};
+      for (const d of embed.pca.dims){
+        const z = await encode(pixels784, models[d.dim]);
+        proj[d.dim] = project(z, d.mean, d.components);
+      }
+      return proj;
+    }
+
+    async function liveProjectAndReconstruct(pixels784){
+      const proj = {};
+      for (const d of embed.pca.dims){
+        const z = await encode(pixels784, models[d.dim]);
+        proj[d.dim] = project(z, d.mean, d.components);
+        if (decModels) embed.setRecon(d.dim, await decode(z, decModels[d.dim]));
+      }
+      return proj;
+    }
+
+    /* Verify before trusting: run a known MNIST pick through the exact same
+       canvas -> preprocess -> encode -> project path used for live drawing,
+       and compare against its precomputed position. If the two disagree, the
+       preprocessing is wrong and every live draw downstream is noise. */
+    async function selfTest(){
+      const pick = embed.picks.picks[0];
+      const off = document.createElement('canvas');
+      off.width = off.height = 140;
+      const octx = off.getContext('2d');
+      octx.fillStyle = '#000'; octx.fillRect(0, 0, 140, 140);
+      octx.imageSmoothingEnabled = false;
+      // paste the 28px pick tile at an arbitrary offset/scale, exactly like a
+      // real drawing would land at an arbitrary size and position
+      octx.drawImage(embed.picksImg, 0, 0, 28, 28, 30, 40, 80, 80);
+      const pixels = preprocessCanvas(off);
+      const proj = await liveProject(pixels);
+      let maxDrift = 0;
+      for (const d of embed.pca.dims){
+        const [ex, ey] = proj[d.dim], [rx, ry] = pick.proj[d.dim];
+        maxDrift = Math.max(maxDrift, Math.hypot(ex - rx, ey - ry));
+      }
+      return maxDrift;
+    }
+
+    const drift = await selfTest();
+    const ok = drift < 1.0;   // projected coordinates are O(1-5) in spread
+    statusEl.textContent = ok
+      ? 'preprocessing check OK (drift ' + drift.toFixed(2) + ' vs a known digit)'
+      : 'preprocessing check failed (drift ' + drift.toFixed(2) + ') — live positions may be unreliable';
+    statusEl.classList.add(ok ? 'is-ok' : 'is-bad');
+    if (!ok) return;   // don't wire a pipeline known to be wrong
+
+    const pad = $('drawPad'), pctx = pad.getContext('2d');
+    pctx.fillStyle = '#000'; pctx.fillRect(0, 0, pad.width, pad.height);
+    let drawing = false, dirty = false, raf = null;
+
+    function posFromEvent(e){
+      const r = pad.getBoundingClientRect();
+      const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+      const cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+      return [cx / r.width * pad.width, cy / r.height * pad.height];
+    }
+
+    function strokeTo(x, y, first){
+      pctx.strokeStyle = '#fff'; pctx.lineWidth = 14;
+      pctx.lineCap = 'round'; pctx.lineJoin = 'round';
+      if (first){ pctx.beginPath(); pctx.moveTo(x, y); }
+      pctx.lineTo(x, y); pctx.stroke();
+      dirty = true;
+    }
+
+    async function onDirty(){
+      if (!dirty) return;
+      dirty = false;
+      const pixels = preprocessCanvas(pad);
+      if (!pixels) return;
+      const proj = await liveProjectAndReconstruct(pixels);
+      embed.select({ label: null, proj });
+    }
+
+    function loop(){ onDirty(); raf = requestAnimationFrame(loop); }
+
+    pad.addEventListener('pointerdown', e => {
+      drawing = true; pad.setPointerCapture(e.pointerId);
+      const [x, y] = posFromEvent(e); strokeTo(x, y, true);
+      if (!raf) loop();
+    });
+    pad.addEventListener('pointermove', e => {
+      if (!drawing) return;
+      const [x, y] = posFromEvent(e); strokeTo(x, y, false);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev =>
+      pad.addEventListener(ev, () => { drawing = false; }));
+
+    $('drawClear').addEventListener('click', () => {
+      pctx.fillStyle = '#000'; pctx.fillRect(0, 0, pad.width, pad.height);
+      embed.clearRecon();
+      embed.select(embed.picks.picks[0]);
+    });
   }
 
   /* ── I5: how the input is compressed (unchanged) ────────── */
