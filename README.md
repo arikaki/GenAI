@@ -3,13 +3,13 @@
 An interactive explainer for the relationship between **variational autoencoders** and
 **denoising diffusion models**.
 
-Both model families are usually taught separately, and learners come away with two disconnected
-mental models. This tool puts them side by side under a single control, so the differences are
-visible rather than asserted: where the encoder is learned and where it is fixed, what the network
-actually predicts, and how one shared objective underlies both.
+The two families are usually taught in separate blocks, and learners come away with two
+disconnected mental models — most commonly the belief that diffusion "encodes into a latent space"
+the way a VAE does. This tool is built around three specific misconceptions and shows, from the
+trained models themselves, where the two families genuinely diverge.
 
 > MSc project for *Generative AI for Human-Computer Interaction*, University of Regensburg.
-> Supervised by Prof. Bernd Ludwig.
+> Supervised by Prof. Dr.-Ing. Bernd Ludwig.
 
 **[→ Open the tool](https://arikaki.github.io/GenAI/)**
 
@@ -17,33 +17,50 @@ actually predicts, and how one shared objective underlies both.
 
 ## What it shows
 
-**One slider drives both panels.** On the VAE side it moves to a new point on a two-dimensional
-latent plane. On the diffusion side it advances one step along a 200-step chain in which every
-state is the same size as the finished image. The same user action produces two different kinds of
-motion, which is the point.
+**Draw a random vector.** Both models start by drawing from N(0, I). The page shows that draw
+twice — as two numbers for the VAE, and as a 32×32 field for the diffusion model. The draws are
+independent and can be re-rolled separately; the difference in their *size* is the first thing the
+tool is trying to teach. The draw is chosen on a map of 5000 encoded test images, coloured by
+digit class, which reports the composition of whatever region you click.
 
-**The diffusion panel can be switched between three views:** the noisy state $x_t$, the network's
-actual output $\hat{\epsilon}$, and the clean-image estimate $\hat{x}_0$ recovered from it. Moving
-the slider with $\hat{x}_0$ selected shows a blurred average sharpening into a digit, without the
-network ever having drawn an image.
+**Variational Autoencoder.** The chosen vector stepping through the decoder layers, with the real
+activation and shape at each stage, until it is an image.
 
-**A second section shows where the randomness enters.** One input image encoded five times gives
-five slightly different reconstructions, because the encoder emits a distribution rather than a
-point. Three reverse runs that differ only in their starting noise resolve into three different
-digits.
+**Diffusion Model.** Two hundred denoising steps, with a toggle between the noisy state x_t, the
+network's actual output ε̂, and the clean-image estimate x̂₀ recovered from it. Dragging through
+the steps with x̂₀ selected shows a blurred average sharpening into a digit — an image the network
+never draws, only implies.
 
-**A third section compares latent space sizes.** Three VAEs, identical except for how many numbers
-the encoder keeps (2, 8, 32), each project a shared set of digits into two dimensions with PCA.
-Picking one moves its marker in all three panels at once, showing that the same image lands
-differently depending on how much room the encoder was given. A drawing pad lets you sketch your
-own digit — encoded live in the browser, run through the same bounding-box-crop and
-centre-of-mass-centring the training images went through, checked against a known digit's
-precomputed position before the pad is enabled.
+**Where the randomness lives.** One image encoded five times gives five slightly different
+reconstructions, because the encoder emits a distribution rather than a point. Three reverse runs
+differing only in their starting noise resolve into three different digits.
+
+**How the input is compressed.** Every layer of both networks, probed with a real forward pass.
+Tile size follows the spatial dimension; bar height follows the number of values held, on a log
+scale shared by both models. The findings are not visible in a block diagram:
+
+| | input | peak | narrowest interior | output |
+| --- | --- | --- | --- | --- |
+| VAE encoder | 784 | 6,272 (8×) | **2** | 2 — an embedding |
+| Diffusion U-Net | 1,024 | 65,536 (64×) | **4,096 (4×)** | 1,024 — image-shaped |
+
+Both networks expand before they contract. Only the VAE ever gets below its input. The U-Net's
+narrowest interior layer still holds four times the image it was given, and it ends back at full
+size — it never forms an embedding at all.
+
+**What is being optimised.** The reconstruction and KL terms over training epochs, pulling against
+each other. The KL term rising while the total falls is not a failure; it is the encoder buying
+reconstruction accuracy by moving the posterior away from the prior.
+
+**Changing the size of the latent space.** The same model trained at four latent sizes — 1, 2, 8
+and 32 — reconstructing the same digits. More dimensions means better reconstruction and less
+compression; there is no correct answer, only a trade-off. Two dimensions is used everywhere else
+on the page for one reason: it is the largest latent space that can be *drawn*.
 
 ## Running it locally
 
-The site is static and needs no build step, but it does need to be served over HTTP: opening
-`index.html` directly from the file system will fail, because the page fetches its data as JSON.
+The site is static and needs no build step, but it must be served over HTTP — opening
+`index.html` from the file system will fail, because the page fetches its data as JSON.
 
 ```bash
 cd docs
@@ -53,40 +70,58 @@ python -m http.server 8000
 
 ## How it is built
 
-Almost everything is precomputed. There is no server and no external API — the one exception is
-the free-hand drawing pad, which runs three small encoders live in the browser via a locally
-bundled TensorFlow.js, so it still works with no network connection.
+Model outputs are precomputed. The VAE and diffusion models are small, trained from scratch on
+MNIST; latent manifolds, reconstructions, forward and reverse trajectories, noise predictions,
+layer activations and the variance schedule are all exported once as sprite sheets and JSON. The
+page reads those files and draws to canvas.
 
-The VAE and diffusion models are small, trained from scratch on MNIST. Every other output the page
-displays — latent manifolds, reconstructions, forward and reverse trajectories, noise predictions,
-the variance schedule, the per-dimension embedding scatters — is precomputed and exported once as
-sprite sheets and JSON. The page reads those files and draws to canvas.
+Sprite layout is never assumed by the front end: tile size, grid dimensions, station lists and
+column counts are all read from the accompanying JSON, so re-exporting with different settings
+does not break the page.
 
-Sprite layout is never assumed by the front end: tile size, grid dimensions and column counts are
-all read from the accompanying JSON, so re-exporting with different settings does not break the
-page.
-
-```text
+```
 docs/              served by GitHub Pages
 ├── index.html
 ├── app.js
 ├── style.css
-├── vendor/        bundled TensorFlow.js (no CDN, works offline)
-├── tfjs/          the three drawing-pad encoders/decoders, converted for the browser
 └── data/          precomputed exports (sprite sheets + JSON)
 ```
 
-`T2_export_vae_cell.py` and `T2_export_diffusion_cell.py` are the original export cells, appended
-to the trained model notebooks and run once; they reuse the trained weights and the notebooks' own
-schedule functions rather than reimplementing anything. Later ones (`T17`, `T19`, `T20`, `T23`)
-follow the same pattern for later sections. `T24_export embeddings.py` is the odd one out — it
-trains its own three models from scratch rather than reusing a notebook's, since the comparison
-needs encoders none of the other sections have.
+### Projection: PCA, not t-SNE
+
+Embeddings from latent spaces larger than two dimensions are projected to 2-D with PCA.
+t-SNE has no out-of-sample extension — a newly encoded digit cannot be placed on an existing t-SNE
+map without refitting the whole projection, which moves every other point. PCA projects a new
+embedding with a single matrix multiplication, which is what an interactive feature requires.
+
+### Export cells
+
+Each is appended to the trained model notebook and run once. They reuse the trained weights and
+the notebooks' own schedule functions rather than reimplementing anything.
+
+| Cell | Produces |
+| --- | --- |
+| `T2_export_vae_cell.py` | latent manifold, scatter, reconstructions, interpolations, loss history |
+| `T2_export_diffusion_cell.py` | schedule, forward process, reverse trajectories, ε̂ and x̂₀ views |
+| `T17_export_vae_layers.py` | encoder layer activations and shapes |
+| `T17_export_diffusion_layers.py` | U-Net layer activations, with the timestep branch marked separately |
+| `T19_export_scatter_labels.py` | the latent scatter, with digit labels |
+| `T20_export_latent_dims.py` | four VAEs at different latent sizes |
+| `T23_export_decoder_layers.py` | decoder activations over a 12×12 grid of latent positions |
+
+## Known approximations
+
+- **Decoder activations depend on z**, so they are precomputed over a 12×12 grid of latent
+  positions and a click snaps to the nearest.
+- **MNIST-scale models.** Sample quality is modest and visible. The tool is about the concepts,
+  not about the behaviour of large generative models.
+- **Two PCA components explain less of a 32-dimensional space** than of an 8-dimensional one, so
+  the higher-dimensional scatters look more smeared. That is the projection, not the model.
 
 ## Status
 
-Under active development for a course deadline in September 2026. The interface, the didactic
-concept behind it, and its evaluation are all still changing.
+Built for a course deadline in September 2026 and currently under evaluation with participants.
+The interface is not being changed while the study is running.
 
 ## References
 
