@@ -12,20 +12,80 @@
   <p class="eyebrow">One random draw · two ways to use it</p>
   <h1>Two ways to<br><em>make an image</em></h1>
   <p class="standfirst">
-    Both models begin the same way: by drawing a random vector from a normal distribution.
-    What each one <strong>does</strong> with that draw could hardly be more different.
-    Choose a starting point below, then watch both models work from it.
+    Both models turn random numbers into pictures of digits, and they are built differently to
+    do it. This page starts <strong>inside the two networks</strong>, to see what each one does to
+    an image — and then follows a single random draw back out through each of them.
   </p>
 </header>
+
+<section class="layers" aria-labelledby="lay-title">
+  <div class="compare__head">
+    <p class="eyebrow">Inside the networks</p>
+    <div class="tags"><span class="tag tag--vae">Variational Autoencoder</span><span class="tag tag--dif">Diffusion Model</span></div>
+    <h2 id="lay-title">How the input is compressed</h2>
+    <p class="standfirst">
+      Every station below is a real layer from the trained models, with its actual shape and
+      activations. <strong>Tile size</strong> follows the spatial dimension;
+      <strong>bar height</strong> follows how many numbers the layer holds, on a log scale shared
+      by both rows.
+    </p>
+  </div>
+
+  <div class="lblock lblock--vae">
+    <div class="lblock__head">
+      <span class="tag tag--vae">Variational Autoencoder</span>
+      <h3 class="cmp__title">Encoder</h3>
+    </div>
+    <div class="lrow" id="lrowVae"></div>
+    <dl class="lsum" id="lsumVae"></dl>
+    <p class="cmp__note">
+      The count is <em>not</em> monotonic: the first convolution makes it larger, because the
+      spatial size halves while the channels grow from 1 to 32. The real compression happens at
+      the dense layers, and the encoder <em>stops</em> at an embedding.
+    </p>
+  </div>
+
+  <div class="lblock lblock--dif">
+    <div class="lblock__head">
+      <span class="tag tag--dif">Diffusion Model</span>
+      <h3 class="cmp__title">U-Net</h3>
+      <div class="views views--inline" role="group" aria-label="How many stations to show">
+        <button class="view is-active" data-stations="key">
+          <span class="view__txt">key stations</span>
+        </button>
+        <button class="view" data-stations="all">
+          <span class="view__txt">every layer</span>
+        </button>
+      </div>
+    </div>
+    <div class="lrow" id="lrowDif"></div>
+    <dl class="lsum" id="lsumDif"></dl>
+    <p class="cmp__note">
+      The spatial size falls to 4×4 and then climbs back to 32×32. The network is shaped like an
+      hourglass, but it is a <em>wide</em> one — wide in channels, not in information.
+    </p>
+  </div>
+
+  <p class="verdict" id="verdictLayers"></p>
+
+  <p class="leadout">
+    The encoder ends at <strong>two numbers</strong>. Two numbers are a <em>plane</em>, and that
+    plane is the next section — everything below starts from a point on it.
+  </p>
+</section>
+
 
 <!-- ─────────── THE SHARED START ─────────── -->
 <section class="start" aria-labelledby="start-title">
   <div class="compare__head">
     <p class="eyebrow">Starting with the same idea, two sizes</p>
+    <div class="tags"><span class="tag tag--vae">Variational Autoencoder</span><span class="tag tag--dif">Diffusion Model</span></div>
     <h2 id="start-title">Draw a random vector</h2>
     <p class="standfirst">
-      Each model gets its own draw, and the two are <strong>independent</strong>. Click the map or use the arrow keys to choose the latent vector; use the buttons to re-roll either draw
-      on its own. The map shows where five thousand real images land, coloured by digit.
+      This is the plane the encoder above produces, with five thousand real images placed on it
+      and coloured by digit. Click it, or use the arrow keys, to choose a latent vector — and use
+      the buttons to re-roll either draw on its own, because <strong>the two draws are
+      independent</strong>. Whatever you choose here is the input to both sections that follow.
     </p>
   </div>
 
@@ -73,6 +133,10 @@
   <div class="proc__head">
     <span class="channel__tag">Variational Autoencoder</span>
     <h2 id="pa-title">The decoder expands 2 numbers into an image</h2>
+    <p class="proc__from">
+      starting from the latent vector you chose above —
+      <span class="num" id="paFrom">z = (0.00, 0.00)</span>
+    </p>
   </div>
 
   <div class="proc__grid">
@@ -103,6 +167,10 @@
   <div class="proc__head">
     <span class="channel__tag">Diffusion Model</span>
     <h2 id="pb-title">The reverse process denoises 1024 numbers, 200 times</h2>
+    <p class="proc__from">
+      starting from the noise field you chose above —
+      <span class="num" id="pbFrom">draw 1 of 3</span>
+    </p>
   </div>
 
   <div class="proc__grid">
@@ -142,16 +210,18 @@
 <section class="compare" aria-labelledby="cmp-title">
   <div class="compare__head">
     <p class="eyebrow">Same setup · different result</p>
+    <div class="tags"><span class="tag tag--vae">Variational Autoencoder</span><span class="tag tag--dif">Diffusion Model</span></div>
     <h2 id="cmp-title">Where the randomness lives</h2>
     <p class="standfirst">
       Both models are random, but the randomness enters at different points. Nothing below is
-      cherry-picked these are the same networks shown above.
+      cherry-picked — these are the same networks shown above.
     </p>
   </div>
 
   <div class="compare__grid">
 
     <div class="cmp cmp--vae">
+      <span class="tag tag--vae">Variational Autoencoder</span>
       <h3 class="cmp__title">One image, encoded five times</h3>
       <div class="strip">
         <figure><canvas id="vr0" width="112" height="112"></canvas><figcaption>input</figcaption></figure>
@@ -162,13 +232,14 @@
       </div>
       <button class="ghost" id="vaeNext">show another image</button>
       <p class="cmp__note">
-        The encoder does not output a point it outputs a <em>distribution</em>. Encode the same
+        The encoder does not output a point — it outputs a <em>distribution</em>. Encode the same
         image five times and you get five slightly different z, so five slightly different
         reconstructions. Only the second uses the mean, with no sampling at all.
       </p>
     </div>
 
     <div class="cmp cmp--dif">
+      <span class="tag tag--dif">Diffusion Model</span>
       <h3 class="cmp__title">Three runs, three starting noises <span class="cmp__t num" id="difStripT">t = 199</span></h3>
       <div class="strip strip--3">
         <figure><canvas id="ds0" width="112" height="112"></canvas><figcaption>seed 1</figcaption></figure>
@@ -177,65 +248,18 @@
       </div>
       <p class="cmp__note">
         Same trained network, same schedule, same number of steps. The only difference is the
-        random noise each run started from and that alone decides which digit appears.
-        Drag the slider above to watch all three resolve at once.
+        random noise each run started from — and that alone decides which digit appears.
+        Move the Diffusion Model slider above to watch all three resolve at once.
       </p>
     </div>
 
   </div>
 </section>
 
-<section class="layers" aria-labelledby="lay-title">
-  <div class="compare__head">
-    <p class="eyebrow">Inside the networks</p>
-    <h2 id="lay-title">How the input is compressed</h2>
-    <p class="standfirst">
-      Every station below is a real layer from the trained models, with its actual shape and
-      activations. <strong>Tile size</strong> follows the spatial dimension;
-      <strong>bar height</strong> follows how many numbers the layer holds, on a log scale shared
-      by both rows.
-    </p>
-  </div>
-
-  <div class="lblock lblock--vae">
-    <div class="lblock__head">
-      <h3 class="cmp__title">VAE encoder</h3>
-    </div>
-    <div class="lrow" id="lrowVae"></div>
-    <dl class="lsum" id="lsumVae"></dl>
-    <p class="cmp__note">
-      The count is <em>not</em> monotonic: the first convolution makes it larger, because the
-      spatial size halves while the channels grow from 1 to 32. The real compression happens at
-      the dense layers, and the encoder <em>stops</em> at an embedding.
-    </p>
-  </div>
-
-  <div class="lblock lblock--dif">
-    <div class="lblock__head">
-      <h3 class="cmp__title">Diffusion U-Net</h3>
-      <div class="views views--inline" role="group" aria-label="How many stations to show">
-        <button class="view is-active" data-stations="key">
-          <span class="view__txt">key stations</span>
-        </button>
-        <button class="view" data-stations="all">
-          <span class="view__txt">every layer</span>
-        </button>
-      </div>
-    </div>
-    <div class="lrow" id="lrowDif"></div>
-    <dl class="lsum" id="lsumDif"></dl>
-    <p class="cmp__note">
-      The spatial size falls to 4×4 and then climbs back to 32×32. The network is shaped like an
-      hourglass, but it is a <em>wide</em> one,  see the figure below.
-    </p>
-  </div>
-
-  <p class="verdict" id="verdictLayers"></p>
-</section>
-
 <section class="elbo" aria-labelledby="elbo-title">
   <div class="compare__head">
     <p class="eyebrow">Training, not just the result</p>
+    <div class="tags"><span class="tag tag--vae">Variational Autoencoder</span><span class="tags__only">this section is about the VAE only</span></div>
     <h2 id="elbo-title">Reconstruction and KL pull in opposite directions</h2>
     <p class="standfirst">
       The VAE minimises one number, but that number is a sum of two terms that do not agree:
@@ -259,10 +283,11 @@
 <section class="dims" aria-labelledby="dims-title">
   <div class="compare__head">
     <p class="eyebrow">How small can it get?</p>
+    <div class="tags"><span class="tag tag--vae">Variational Autoencoder</span><span class="tags__only">this section is about the VAE only</span></div>
     <h2 id="dims-title">Changing the size of the latent space</h2>
     <p class="standfirst">
       The same model, trained four times, differing only in how many numbers the encoder is
-      allowed to keep. Everything else like architecture, data, training are held fixed.
+      allowed to keep. Everything else — architecture, data, training — is held fixed.
     </p>
   </div>
 
@@ -282,12 +307,13 @@
 <section class="embed" aria-labelledby="embed-title">
   <div class="compare__head">
     <p class="eyebrow">One digit · three latent spaces</p>
+    <div class="tags"><span class="tag tag--vae">Variational Autoencoder</span><span class="tags__only">this section is about the VAE only</span></div>
     <h2 id="embed-title">Where the same image lands, at three sizes</h2>
     <p class="standfirst">
       Three independently trained encoders, identical except for how many numbers each keeps.
-      Pick a digit below and watch where it lands in each of the three latent spaces, then
-      projected to two dimensions with
-      PCA, since only a 2-D space can be plotted directly.
+      Pick a digit below, or draw your own, and watch where it lands in each of the three latent
+      spaces. Each is projected to two dimensions with PCA, since only a 2-D space can be plotted
+      directly.
     </p>
   </div>
 
