@@ -215,6 +215,7 @@ async function main(){
   /* ── the starting noise tile: column 0 of the reverse sheet is x_T ── */
   function paintStartNoise(){
     drawTile($('startNoise').getContext('2d'), sheets.reverse, 0, seed, dTile, 0);
+    $('pbFrom').textContent = 'draw ' + (seed + 1) + ' of ' + SEEDS;   // T29
   }
 
   /* ── I2: where the randomness lives (unchanged, approved) ── */
@@ -241,7 +242,9 @@ async function main(){
   /* ── one update for a new draw ──────────────────────────── */
   function setDraw(a, b){
     z = [Math.max(LO, Math.min(HI, a)), Math.max(LO, Math.min(HI, b))];
-    $('startZ').textContent = 'z = (' + z[0].toFixed(2) + ', ' + z[1].toFixed(2) + ')';
+    const zLabel = 'z = (' + z[0].toFixed(2) + ', ' + z[1].toFixed(2) + ')';
+    $('startZ').textContent = zLabel;
+    $('paFrom').textContent = zLabel;          // T29: same vector, said out loud
     const n = neighbourhood();
     $('startVerdict').innerHTML = n
       ? 'Of the 40 encoded images nearest this point, <strong>' +
