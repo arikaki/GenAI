@@ -587,3 +587,49 @@ body{
 .elbo__key i{width:.7rem;height:.7rem;border-radius:1px;display:block}
 .elbo__key--recon i{background:var(--vae)}
 .elbo__key--kl i{background:var(--dif)}
+/* ─── T27 · which model is this? ────────────────────────
+   Raised twice in review: it was not always clear whether a visualisation
+   referred to the VAE or the diffusion model. Every section and sub-block
+   now carries a colour-coded badge naming its model. */
+
+.tags{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin:0 0 .55rem}
+
+.tag{
+  display:inline-block;
+  padding:.16rem .5rem;border-radius:2px;
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.09em;
+  text-transform:uppercase;color:#fff;white-space:nowrap;
+}
+.tag--vae{background:var(--vae)}
+.tag--dif{background:var(--dif)}
+
+.tags__only{
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.04em;
+  color:var(--muted);font-style:italic;
+}
+
+/* sub-blocks: the badge sits above the block title */
+.cmp .tag, .lblock__head .tag{margin-bottom:.4rem}
+.lblock__head{flex-wrap:wrap}
+.lblock__head .tag{flex-basis:100%}
+
+/* ─── T29 · the input came from the section above ───────
+   The coupling already existed in the code; this makes it visible. */
+
+.proc__from{
+  margin:.45rem 0 0;
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.02em;
+  color:var(--muted);
+}
+.proc__from .num{font-size:.72rem;color:var(--chan)}
+
+/* ─── T28 · hand-off from the opening section ───────────  */
+
+.leadout{
+  margin:1rem 0 0;padding:.85rem 1rem;
+  border-left:3px solid var(--vae);background:var(--panel);
+  border-radius:0 2px 2px 0;
+  font-size:.92rem;color:var(--muted);
+}
+.leadout strong{color:var(--ink);font-weight:660}
+.leadout em{color:var(--ink);font-style:italic}
