@@ -118,10 +118,6 @@ the notebooks' own schedule functions rather than reimplementing anything.
 - **Two PCA components explain less of a 32-dimensional space** than of an 8-dimensional one, so
   the higher-dimensional scatters look more smeared. That is the projection, not the model.
 
-## Status
-
-Built for a course deadline in September 2026 and currently under evaluation with participants.
-The interface is not being changed while the study is running.
 
 ## References
 
