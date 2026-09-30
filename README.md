@@ -9,7 +9,7 @@ the way a VAE does. This tool is built around three specific misconceptions and 
 trained models themselves, where the two families genuinely diverge.
 
 > MSc project for *Generative AI for Human-Computer Interaction*, University of Regensburg.
-> Supervised by Prof. Dr.-Ing. Bernd Ludwig.
+> Supervised by Prof. Dr. Bernd Ludwig.
 
 **[→ Open the tool](https://arikaki.github.io/GenAI/)**
 
