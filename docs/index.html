@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Two ways to make an image — VAE and diffusion, side by side</title>
+<title>Two ways to make an image: VAE and diffusion, side by side</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
   <p class="standfirst">
     Both models turn random numbers into pictures of digits, and they are built differently to
     do it. This page starts <strong>inside the two networks</strong>, to see what each one does to
-    an image — and then follows a single random draw back out through each of them.
+    an image, and then follows a single random draw back out through each of them.
   </p>
 </header>
 
@@ -62,7 +62,7 @@
     <dl class="lsum" id="lsumDif"></dl>
     <p class="cmp__note">
       The spatial size falls to 4×4 and then climbs back to 32×32. The network is shaped like an
-      hourglass, but it is a <em>wide</em> one — wide in channels, not in information.
+      hourglass, but it is a <em>wide</em> one, wide in channels, not in information.
     </p>
   </div>
 
@@ -70,7 +70,7 @@
 
   <p class="leadout">
     The encoder ends at <strong>two numbers</strong>. Two numbers are a <em>plane</em>, and that
-    plane is the next section — everything below starts from a point on it.
+    plane is the next section; everything below starts from a point on it.
   </p>
 </section>
 
@@ -83,7 +83,7 @@
     <h2 id="start-title">Draw a random vector</h2>
     <p class="standfirst">
       This is the plane the encoder above produces, with five thousand real images placed on it
-      and coloured by digit. Click it, or use the arrow keys, to choose a latent vector — and use
+      and coloured by digit. Click it, or use the arrow keys, to choose a latent vector, and use
       the buttons to re-roll either draw on its own, because <strong>the two draws are
       independent</strong>. Whatever you choose here is the input to both sections that follow.
     </p>
@@ -121,7 +121,7 @@
   <p class="verdict">
     Both are samples from the <strong>same distribution</strong>. The difference is size:
     the VAE's draw has <strong>2</strong> dimensions, the diffusion model's has
-    <strong>1024</strong> — one for every pixel of the image it will become.
+    <strong>1024</strong>, one for every pixel of the image it will become.
     They are drawn <strong>independently</strong>: the noise field is not an encoding of the digit
     on the left, and there is no correspondence between the two. Re-roll them separately to see
     that each model's result depends only on its own draw.
@@ -134,7 +134,7 @@
     <span class="channel__tag">Variational Autoencoder</span>
     <h2 id="pa-title">The decoder expands 2 numbers into an image</h2>
     <p class="proc__from">
-      starting from the latent vector you chose above —
+      starting from the latent vector you chose above:
       <span class="num" id="paFrom">z = (0.00, 0.00)</span>
     </p>
   </div>
@@ -168,7 +168,7 @@
     <span class="channel__tag">Diffusion Model</span>
     <h2 id="pb-title">The reverse process denoises 1024 numbers, 200 times</h2>
     <p class="proc__from">
-      starting from the noise field you chose above —
+      starting from the noise field you chose above:
       <span class="num" id="pbFrom">draw 1 of 3</span>
     </p>
   </div>
@@ -214,7 +214,7 @@
     <h2 id="cmp-title">Where the randomness lives</h2>
     <p class="standfirst">
       Both models are random, but the randomness enters at different points. Nothing below is
-      cherry-picked — these are the same networks shown above.
+      cherry-picked; these are the same networks shown above.
     </p>
   </div>
 
@@ -232,7 +232,7 @@
       </div>
       <button class="ghost" id="vaeNext">show another image</button>
       <p class="cmp__note">
-        The encoder does not output a point — it outputs a <em>distribution</em>. Encode the same
+        The encoder does not output a point; it outputs a <em>distribution</em>. Encode the same
         image five times and you get five slightly different z, so five slightly different
         reconstructions. Only the second uses the mean, with no sampling at all.
       </p>
@@ -248,7 +248,7 @@
       </div>
       <p class="cmp__note">
         Same trained network, same schedule, same number of steps. The only difference is the
-        random noise each run started from — and that alone decides which digit appears.
+        random noise each run started from, and that alone decides which digit appears.
         Move the Diffusion Model slider above to watch all three resolve at once.
       </p>
     </div>
@@ -287,7 +287,7 @@
     <h2 id="dims-title">Changing the size of the latent space</h2>
     <p class="standfirst">
       The same model, trained four times, differing only in how many numbers the encoder is
-      allowed to keep. Everything else — architecture, data, training — is held fixed.
+      allowed to keep. Everything else (architecture, data, training) is held fixed.
     </p>
   </div>
 
@@ -323,7 +323,7 @@
     <div class="embed__strip" id="embedStrip"></div>
     <div class="embed__draw">
       <canvas id="drawPad" width="200" height="200"
-              aria-label="Draw a digit here — it is encoded live by all three models above"></canvas>
+              aria-label="Draw a digit here; it is encoded live by all three models above"></canvas>
       <div class="embed__draw_row">
         <button class="ghost" id="drawClear">clear</button>
         <p class="draw__status" id="drawStatus"></p>
@@ -336,7 +336,7 @@
 
 <footer class="foot">
   <p>MNIST-scale models trained for this project. Everything above is precomputed except the
-    drawing pad, which runs live in your browser — the encoders are bundled here as
+    drawing pad, which runs live in your browser: the encoders are bundled here as
     TensorFlow.js models, so it works with no network connection.</p>
 </footer>
 

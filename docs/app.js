@@ -7,11 +7,11 @@ const SHEETS = {
 };
 
 const NOTES = {
-  reverse: 'The state at step <em>t</em> — the same size as the finished image, never compressed.',
+  reverse: 'The state at step <em>t</em>, the same size as the finished image, never compressed.',
   eps:     'What the network actually outputs: an estimate of the <em>noise</em> present at step ' +
            '<em>t</em>. Not a picture of a digit.',
   x0:      'The network never draws this. It is computed from &epsilon;&#770; by rearranging the ' +
-           'forward equation — blurry early, sharp late.'
+           'forward equation: blurry early, sharp late.'
 };
 
 const CLASS_COLOURS = ['#4E79A7','#F28E2B','#E15759','#76B7B2','#59A14F',
@@ -249,8 +249,8 @@ async function main(){
     $('startVerdict').innerHTML = n
       ? 'Of the 40 encoded images nearest this point, <strong>' +
         Math.round(n.share * 100) + '% are ' + n.digit + 's</strong>' +
-        (n.spread > 1 ? ' — ' + n.spread + ' different digits appear here.'
-                      : ' — only one digit appears here.')
+        (n.spread > 1 ? ': ' + n.spread + ' different digits appear here.'
+                      : ': only one digit appears here.')
       : 'Re-export <code>vae_scatter.json</code> with labels to see which digits live here.';
     paintMap();
     paintChannelA();
@@ -381,7 +381,7 @@ async function main(){
 
     const lo = meta.dims[0], hi = meta.dims[meta.dims.length - 1];
     $('dimsVerdict').innerHTML =
-      'More dimensions means better reconstruction and less compression — ' +
+      'More dimensions means better reconstruction and less compression: ' +
       'from <strong>' + lo.compression + '×</strong> at ' + lo.dim + ' to <strong>' +
       hi.compression + '×</strong> at ' + hi.dim + ', with reconstruction loss falling from ' +
       lo.recon + ' to ' + hi.recon + '. There is no correct answer, only a trade-off. ' +
@@ -590,10 +590,10 @@ async function main(){
     const lo = pca.dims[0], hi = pca.dims[pca.dims.length - 1];
     $('embedVerdict').innerHTML =
       'The same image, encoded three times. Its position moves because each encoder learned a ' +
-      '<strong>different space</strong> — not because the image changed. Variance explained by ' +
+      '<strong>different space</strong>, not because the image changed. Variance explained by ' +
       'the two plotted components falls from <strong>' + pct(lo.explained[0] + lo.explained[1]) +
       '</strong> at ' + lo.dim + ' dimensions to <strong>' + pct(hi.explained[0] + hi.explained[1]) +
-      '</strong> at ' + hi.dim + ' — the ' + hi.dim + '-D scatter looks more smeared for that ' +
+      '</strong> at ' + hi.dim + ', and the ' + hi.dim + '-D scatter looks more smeared for that ' +
       'reason alone, not because the model is worse.';
 
     paintAll();
@@ -759,7 +759,7 @@ async function main(){
     const ok = drift < 1.0;   // projected coordinates are O(1-5) in spread
     statusEl.textContent = ok
       ? 'preprocessing check OK (drift ' + drift.toFixed(2) + ' vs a known digit)'
-      : 'preprocessing check failed (drift ' + drift.toFixed(2) + ') — live positions may be unreliable';
+      : 'preprocessing check failed (drift ' + drift.toFixed(2) + '): live positions may be unreliable';
     statusEl.classList.add(ok ? 'is-ok' : 'is-bad');
     if (!ok) return;   // don't wire a pipeline known to be wrong
 
@@ -916,7 +916,7 @@ async function main(){
       'Both networks expand before they contract. Only one ever gets below its input: the ' +
       'encoder ends at <strong>' + vOut + '</strong> numbers, a ' + Math.round(vIn/vOut) +
       '× reduction. The U-Net\'s narrowest interior layer still holds <strong>' + fmt(dFloor) +
-      '</strong> — ' + (dFloor/dIn).toFixed(0) + '× the image it was given — and it ends back at ' +
+      '</strong>, ' + (dFloor/dIn).toFixed(0) + '× the image it was given, and it ends back at ' +
       'full size. It never forms an embedding at all.';
   }
 }
