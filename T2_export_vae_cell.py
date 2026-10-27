@@ -8,7 +8,7 @@ ENCODER = encoder          # keras.Model -> [z_mean, z_log_var, z]
 DECODER = decoder          # keras.Model: z -> image
 DATA    = mnist_digits     # (N,28,28,1) float in [0,1]
 LABELS  = None             # set to y_train/np.concatenate([y_train,y_test]) if available
-HISTORY = None             # set to the object returned by vae.fit(...) if you kept it
+HISTORY = globals().get("history")   # the object returned by vae.fit(...), if kept as `history`
 # -------------------------------------------------------------------------------
 
 def u8(a):                              # float [0,1] -> uint8

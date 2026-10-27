@@ -1,5 +1,20 @@
 const DATA = 'data/';
 
+/* Self-check tolerances, measured by tests/calibrate_selfchecks.mjs (README,
+   "Self-checks"). Each sits between what a correct pipeline scores and what
+   realistic mistakes score:
+   PAD_TOL   worst drift over one pick per digit, as a fraction of each panel's
+             spread. Correct: at most 0.0008. Mildest mistake (no crop): 0.48.
+   DEC_TOL   mean per-pixel error of the live decoder against the precomputed
+             grid. Bundled or float16 weights: 0.0008; weights perturbed by 10%
+             of their spread: 0.012; any other trained decoder: 0.07 to 0.12.
+   UNET_TOL  relative RMS error of the live U-Net's noise prediction on the
+             exported checks. Float16 conversion: at most 0.008; input on the
+             wrong scale: 0.5 or more. Re-run the calibration after retraining. */
+const PAD_TOL = 0.05;
+const DEC_TOL = 0.01;
+const UNET_TOL = 0.05;
+
 const SHEETS = {
   reverse: 'reverse.png',   // x_t   — the noisy state
   eps:     'eps_pred.png',  // eps^  — what the network outputs
@@ -29,6 +44,10 @@ const loadImage = f => new Promise((res, rej) => {
   im.src = DATA + f;
 });
 const optional = p => p.catch(() => null);
+
+/* What each self-check measured on this load, for anyone debugging the page
+   and for the CI page check. */
+window.selfChecks = {};
 
 /* Draw one tile of a sprite sheet. `pad` is the gap baked in at export time —
    the manifold and diffusion sheets use 0, vae_recon and vae_interp use 1. */
@@ -207,43 +226,51 @@ async function main(){
         o.shape.slice(1).join() === decStations[k + 1].shape.join());
       if (!shapesOk) throw new Error('layer shapes differ from layers_vae_decoder.json');
 
-      const N = dec.grid, [gLo, gHi] = dec.range, TL = dec.tile;
-      const zs = [];
-      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
-        zs.push([gLo + c/(N-1)*(gHi - gLo), gHi - r/(N-1)*(gHi - gLo)]);
-      const last = tf.tidy(() => model.predict(tf.tensor2d(zs)));
-      const imgs = await last.data(); last.dispose();
-
-      const sc = document.createElement('canvas');
-      sc.width = decImg.width; sc.height = decImg.height;
-      const sctx = sc.getContext('2d');
-      sctx.drawImage(decImg, 0, 0);
-      const col = decStations.length - 1;
-      const [oh, ow] = decStations[col].shape, n = oh * ow;
-      let err = 0;
-      for (let p = 0; p < zs.length; p++){
-        const tile = sctx.getImageData(col * TL, p * TL, TL, TL).data;
-        const im = imgs.subarray(p * n, (p + 1) * n);
-        let lo = Infinity, hi = -Infinity;
-        for (const v of im){ if (v < lo) lo = v; if (v > hi) hi = v; }
-        let e = 0;
-        for (let y = 0; y < TL; y++) for (let x = 0; x < TL; x++){
-          // PIL NEAREST, as used by T23 to scale each tile up to TL
-          const sy = Math.floor((y + .5) * oh / TL), sx = Math.floor((x + .5) * ow / TL);
-          const v = hi > lo ? (im[sy * ow + sx] - lo) / (hi - lo) : 0;
-          e += Math.abs(v - tile[(y * TL + x) * 4] / 255);
-        }
-        err += e / (TL * TL);
-      }
-      err /= zs.length;
-      if (err > 0.02) throw new Error('live decoder does not reproduce the grid ' +
-                                      '(mean error ' + err.toFixed(3) + ')');
+      const err = await decoderGridError(model);
+      window.selfChecks.decoder = err;
+      if (err > DEC_TOL) throw new Error('live decoder does not reproduce the grid ' +
+                                         '(mean error ' + err.toFixed(3) + ')');
       liveDec = { probe, err };
       paintChannelA();
     } catch (e) {
       console.warn('Decoder stays on the precomputed grid:', e.message);
     }
   }
+
+  /* Mean per-pixel error, on a 0..1 scale, between `model`'s decoding of every
+     grid point and the precomputed sprite's last column. */
+  async function decoderGridError(model){
+    const N = dec.grid, [gLo, gHi] = dec.range, TL = dec.tile;
+    const zs = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
+      zs.push([gLo + c/(N-1)*(gHi - gLo), gHi - r/(N-1)*(gHi - gLo)]);
+    const last = tf.tidy(() => model.predict(tf.tensor2d(zs)));
+    const imgs = await last.data(); last.dispose();
+
+    const sc = document.createElement('canvas');
+    sc.width = decImg.width; sc.height = decImg.height;
+    const sctx = sc.getContext('2d');
+    sctx.drawImage(decImg, 0, 0);
+    const col = decStations.length - 1;
+    const [oh, ow] = decStations[col].shape, n = oh * ow;
+    let err = 0;
+    for (let p = 0; p < zs.length; p++){
+      const tile = sctx.getImageData(col * TL, p * TL, TL, TL).data;
+      const im = imgs.subarray(p * n, (p + 1) * n);
+      let lo = Infinity, hi = -Infinity;
+      for (const v of im){ if (v < lo) lo = v; if (v > hi) hi = v; }
+      let e = 0;
+      for (let y = 0; y < TL; y++) for (let x = 0; x < TL; x++){
+        // PIL NEAREST, as used by T23 to scale each tile up to TL
+        const sy = Math.floor((y + .5) * oh / TL), sx = Math.floor((x + .5) * ow / TL);
+        const v = hi > lo ? (im[sy * ow + sx] - lo) / (hi - lo) : 0;
+        e += Math.abs(v - tile[(y * TL + x) * 4] / 255);
+      }
+      err += e / (TL * TL);
+    }
+    return err / zs.length;
+  }
+  window.explainerProbe = Object.assign(window.explainerProbe || {}, { decoderGridError });
 
   function paintChannelA(){
     const i = +paStep.value;
@@ -324,9 +351,19 @@ async function main(){
     g.beginPath(); g.arc(x, y, 5, 0, Math.PI * 2); g.fill(); g.stroke();
   }
 
+  /* The trajectory on show: a stored run (row `seed` of the exported sheets)
+     or one sampled live in this browser (`live`, one row per view). */
+  let live = null;
+  function trajTile(cv, kind, col){
+    const ctx = cv.getContext('2d');
+    if (live) drawTile(ctx, live[kind], col, 0, dTile, 0);
+    else if (kind === 'start') drawTile(ctx, startImg || sheets.reverse, 0, seed, dTile, 0);
+    else drawTile(ctx, sheets[kind], col, seed, dTile, 0);
+  }
+
   function paintChannelB(){
     const i = +pbStep.value, t = T - 1 - i;
-    drawTile($('pbImage').getContext('2d'), sheets[view], i, seed, dTile, 0);
+    trajTile($('pbImage'), view, i);
     $('pbT').textContent = 't = ' + t;
     paintSched(t);
     paintEquation(i, t);
@@ -337,9 +374,8 @@ async function main(){
      reverse.png holds the state *after* step k, so the input is column i-1;
      the very first input, x_T, is a separate export. */
   function paintInput(cv, i){
-    if (i > 0) drawTile(cv.getContext('2d'), sheets.reverse, i - 1, seed, dTile, 0);
-    else if (startImg) drawTile(cv.getContext('2d'), startImg, 0, seed, dTile, 0);
-    else drawTile(cv.getContext('2d'), sheets.reverse, 0, seed, dTile, 0);
+    if (i > 0) trajTile(cv, 'reverse', i - 1);
+    else trajTile(cv, 'start', 0);
   }
 
   /* The x_t / eps / x0 toggle shows one view at a time, so a sharpening x0
@@ -348,8 +384,8 @@ async function main(){
   function paintEquation(i, t){
     if (!$('eqXt')) return;
     paintInput($('eqXt'), i);
-    drawTile($('eqEps').getContext('2d'), sheets.eps, i, seed, dTile, 0);
-    drawTile($('eqX0').getContext('2d'), sheets.x0, i, seed, dTile, 0);
+    trajTile($('eqEps'), 'eps', i);
+    trajTile($('eqX0'), 'x0', i);
     $('eqA').textContent = sched.sqrt_one_minus_abar[t].toFixed(2);
     $('eqB').textContent = sched.sqrt_alpha_bar[t].toFixed(2);
     $('eqT').textContent = 't = ' + t;
@@ -358,7 +394,8 @@ async function main(){
   /* ── the starting noise tile: x_T itself ── */
   function paintStartNoise(){
     paintInput($('startNoise'), 0);
-    $('pbFrom').textContent = 'draw ' + (seed + 1) + ' of ' + SEEDS;   // T29
+    $('pbFrom').textContent = live ? 'a fresh draw, run live in your browser'
+                                   : 'stored draw ' + (seed + 1) + ' of ' + SEEDS;   // T29
   }
 
   /* ── I2: where the randomness lives (unchanged, approved) ── */
@@ -426,10 +463,111 @@ async function main(){
 
   $('newDrawVae').addEventListener('click', () => setDraw(gauss(), gauss()));
 
-  $('newDrawDif').addEventListener('click', () => {
+  /* With the U-Net bundled (T32), a click draws genuinely new noise and runs
+     all T steps here. Without it, or if it fails its self-check, the button
+     steps through the stored runs, and the note under it says so. */
+  const UNET = 'tfjs/unet/model.json';
+  let unet = null, unetState = 'unknown';         // unknown | absent | ok | failed
+  if (typeof tf !== 'undefined')
+    fetch(UNET, { method: 'HEAD' }).then(r => {
+      unetState = r.ok ? 'available' : 'absent';
+      if (r.ok) $('difNote').textContent = 'The same kind of draw, one value per pixel. ' +
+        'Each click draws new noise and runs all ' + T + ' denoising steps live in your ' +
+        'browser; the first click downloads the network.';
+    }).catch(() => { unetState = 'absent'; });
+
+  function cycleStored(){
+    live = null;
     seed = (seed + 1) % SEEDS;
     paintStartNoise();
     paintChannelB();
+  }
+
+  /* Verify before trusting: known inputs from the export, compared with the
+     network's outputs there. Float16 weights change the outputs slightly;
+     a different or broken model changes them completely. */
+  async function loadUnet(){
+    const model = await tf.loadGraphModel(UNET);
+    const { checks } = await loadJSON('unet_check.json');
+    let worst = 0;
+    for (const c of checks){
+      const out = tf.tidy(() => model.execute({ x: tf.tensor4d(c.x, [1, dTile, dTile, 1]),
+                                                t: tf.tensor1d([c.t], 'int32') }));
+      const got = await out.data(); out.dispose();
+      let d2 = 0, e2 = 0;
+      c.eps.forEach((v, k) => { d2 += (got[k] - v) ** 2; e2 += v * v; });
+      worst = Math.max(worst, Math.sqrt(d2 / e2));
+    }
+    window.selfChecks.unet = worst;
+    if (!(worst < UNET_TOL)) throw new Error('U-Net self-check failed (relative error ' +
+                                              worst.toFixed(4) + ')');
+    return model;
+  }
+
+  const toU8 = v => Math.floor(Math.min(1, Math.max(0, (v + 1) / 2)) * 255);
+  function putTile(cv, col, vals){
+    const ctx = cv.getContext('2d'), id = ctx.createImageData(dTile, dTile);
+    vals.forEach((v, p) => {
+      id.data[p*4] = id.data[p*4+1] = id.data[p*4+2] = toU8(v); id.data[p*4+3] = 255;
+    });
+    ctx.putImageData(id, col * dTile, 0);
+  }
+
+  async function runLive(){
+    const btn = $('newDrawDif');
+    btn.disabled = true;
+    try {
+      if (!unet){
+        $('pbFrom').textContent = 'loading the diffusion network…';
+        unet = await loadUnet();
+        unetState = 'ok';
+      }
+      const sheet = () => Object.assign(document.createElement('canvas'),
+                                        { width: T * dTile, height: dTile });
+      live = { reverse: sheet(), eps: sheet(), x0: sheet(),
+               start: Object.assign(document.createElement('canvas'), { width: dTile, height: dTile }) };
+      pbStep.disabled = true;
+      let x = tf.randomNormal([1, dTile, dTile, 1]);
+      putTile(live.start, 0, await x.data());
+      paintStartNoise();
+      // the same step as diffusion_schedule.reverse_step, sigma_t^2 = beta_t
+      for (let k = 0; k < T; k++){
+        const t = T - 1 - k;
+        const [eps, x0, next] = tf.tidy(() => {
+          const e = unet.execute({ x, t: tf.tensor1d([t], 'int32') });
+          const x0 = x.sub(e.mul(sched.sqrt_one_minus_abar[t])).div(sched.sqrt_alpha_bar[t]);
+          let m = x.sub(e.mul(sched.beta[t] / sched.sqrt_one_minus_abar[t]))
+                   .div(Math.sqrt(sched.alpha[t]));
+          if (t > 0) m = m.add(tf.randomNormal(x.shape).mul(Math.sqrt(sched.beta[t])));
+          return [e, x0, m];
+        });
+        putTile(live.eps, k, await eps.data());
+        putTile(live.x0, k, await x0.data());
+        putTile(live.reverse, k, await next.data());
+        x.dispose(); eps.dispose(); x0.dispose();
+        x = next;
+        pbStep.value = k;
+        paintChannelB();
+        $('pbFrom').textContent = 'running live: step ' + (k + 1) + ' of ' + T;
+        await tf.nextFrame();
+      }
+      x.dispose();
+      paintStartNoise();
+    } catch (e) {
+      console.warn('Live sampling unavailable:', e.message);
+      unetState = 'failed';
+      $('difNote').textContent = 'The same kind of draw, one value per pixel. The live network ' +
+        'could not be used here, so this button steps through three stored draws.';
+      cycleStored();
+    } finally {
+      pbStep.disabled = false;
+      btn.disabled = false;
+    }
+  }
+
+  $('newDrawDif').addEventListener('click', () => {
+    if (unetState === 'available' || unetState === 'ok') runLive();
+    else cycleStored();
   });
 
   paStep.addEventListener('input', paintChannelA);
@@ -800,7 +938,7 @@ async function main(){
     paintAll();
 
     return {
-      pca, picks, picksImg,
+      pca, picks, picksImg, scatter,
       select(pk){ selected = pk; paintAll(); },
       setRecon, clearRecon,
     };
@@ -932,35 +1070,61 @@ async function main(){
       return proj;
     }
 
-    /* Verify before trusting: run a known MNIST pick through the exact same
-       canvas -> preprocess -> encode -> project path used for live drawing,
-       and compare against its precomputed position. If the two disagree, the
-       preprocessing is wrong and every live draw downstream is noise. */
-    async function selfTest(){
-      const pick = embed.picks.picks[0];
-      const off = document.createElement('canvas');
-      off.width = off.height = 140;
-      const octx = off.getContext('2d');
-      octx.fillStyle = '#000'; octx.fillRect(0, 0, 140, 140);
-      octx.imageSmoothingEnabled = false;
-      // paste the 28px pick tile at an arbitrary offset/scale, exactly like a
-      // real drawing would land at an arbitrary size and position
-      octx.drawImage(embed.picksImg, 0, 0, 28, 28, 30, 40, 80, 80);
-      const pixels = preprocessCanvas(off);
-      const proj = await liveProject(pixels);
-      let maxDrift = 0;
+    /* Drift is measured relative to each panel's spread (RMS distance of its
+       scatter from the centre), since the 2-, 8- and 32-D projections have
+       different scales. */
+    const spread = {};
+    for (const d of embed.pca.dims){
+      const pts = embed.scatter[d.dim] || [];
+      const mx = pts.reduce((s, p) => s + p[0], 0) / pts.length,
+            my = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+      spread[d.dim] = Math.sqrt(pts.reduce((s, p) => s + (p[0]-mx)**2 + (p[1]-my)**2, 0) / pts.length);
+    }
+    function relDrift(proj, ref){
+      let worst = 0;
       for (const d of embed.pca.dims){
-        const [ex, ey] = proj[d.dim], [rx, ry] = pick.proj[d.dim];
-        maxDrift = Math.max(maxDrift, Math.hypot(ex - rx, ey - ry));
+        const [ex, ey] = proj[d.dim], [rx, ry] = ref[d.dim];
+        worst = Math.max(worst, Math.hypot(ex - rx, ey - ry) / spread[d.dim]);
       }
-      return maxDrift;
+      return worst;
+    }
+    window.explainerProbe = Object.assign(window.explainerProbe || {}, {
+      preprocessCanvas, liveProject, relDrift, picks: embed.picks.picks, picksImg: embed.picksImg,
+      testPicks: () => testPicks.map(([, i]) => i)
+    });
+
+    /* Verify before trusting: run known MNIST picks through the exact same
+       canvas -> preprocess -> encode -> project path used for live drawing,
+       and compare against their precomputed positions. If they disagree, the
+       preprocessing is wrong and every live draw downstream is noise. One
+       pick per digit: a single, nearly symmetric digit cannot tell centring
+       by centre of mass from centring by bounding box. */
+    const testPicks = embed.picks.picks
+      .map((pk, i) => [pk, i])
+      .filter(([pk], k, all) => all.findIndex(([q]) => q.label === pk.label) === k);
+    async function selfTest(){
+      let worst = 0;
+      for (const [pick, i] of testPicks){
+        const off = document.createElement('canvas');
+        off.width = off.height = 140;
+        const octx = off.getContext('2d');
+        octx.fillStyle = '#000'; octx.fillRect(0, 0, 140, 140);
+        octx.imageSmoothingEnabled = false;
+        // paste the 28px tile at an arbitrary offset and size, as a drawing would
+        // land. 80px or more: smaller nearest-neighbour scalings distort the digit.
+        octx.drawImage(embed.picksImg, i * 29, 0, 28, 28, 30, 40, 80, 80);
+        worst = Math.max(worst, relDrift(await liveProject(preprocessCanvas(off)), pick.proj));
+      }
+      return worst;
     }
 
     const drift = await selfTest();
-    const ok = drift < 1.0;   // projected coordinates are O(1-5) in spread
+    window.selfChecks.pad = drift;
+    const ok = drift < PAD_TOL;
     statusEl.textContent = ok
-      ? 'preprocessing check OK (drift ' + drift.toFixed(2) + ' vs a known digit)'
-      : 'preprocessing check failed (drift ' + drift.toFixed(2) + '): live positions may be unreliable';
+      ? 'preprocessing check OK (drift ' + (drift * 100).toFixed(0) + '% of the spread, vs a known digit)'
+      : 'preprocessing check failed (drift ' + (drift * 100).toFixed(0) + '% of the spread): ' +
+        'live positions may be unreliable';
     statusEl.classList.add(ok ? 'is-ok' : 'is-bad');
     if (!ok) return;   // don't wire a pipeline known to be wrong
 

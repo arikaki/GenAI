@@ -29,7 +29,7 @@ ROOT = _find_root()
 
 # --- config ------------------------------------------------------------------
 DECODER = decoder
-TOL     = 0.02                  # mean abs error per pixel, on a 0..1 scale
+TOL     = 0.01                  # mean abs error per pixel, 0..1; DEC_TOL in docs/app.js
 # -----------------------------------------------------------------------------
 
 meta  = json.load(open(os.path.join(ROOT, "docs", "data", "layers_vae_decoder.json")))
