@@ -19,17 +19,23 @@ trained models themselves, where the two families genuinely diverge.
 
 **Draw a random vector.** Both models start by drawing from N(0, I). The page shows that draw
 twice: as two numbers for the VAE, and as a 32×32 field for the diffusion model. The draws are
-independent and can be re-rolled separately; the difference in their *size* is the first thing the
-tool is trying to teach. The draw is chosen on a map of 5000 encoded test images, coloured by
-digit class, which reports the composition of whatever region you click.
+independent and each has its own control: the VAE's draws a fresh Gaussian sample, while the
+diffusion one steps through three stored starting noises, since every reverse run is precomputed.
+The difference in their *size* is the first thing the tool is trying to teach. The draw is chosen
+on a map of 5,000 MNIST images (drawn from the training and test sets together), coloured by digit
+class, which reports the composition of whatever region you click.
 
 **Variational Autoencoder.** The chosen vector stepping through the decoder layers, with the real
-activation and shape at each stage, until it is an image.
+activation and shape at each stage, until it is an image. The page says under the heading whether
+those layers were decoded live from the exact vector or taken from the nearest precomputed grid
+point (see *Known approximations*).
 
 **Diffusion Model.** Two hundred denoising steps, with a toggle between the noisy state x_t, the
 network's actual output ε̂, and the clean-image estimate x̂₀ recovered from it. Dragging through
 the steps with x̂₀ selected shows a blurred average sharpening into a digit, an image the network
-never draws, only implies.
+never draws, only implies. Because a toggle shows one view at a time, a strip beneath it shows
+all three at once as the equation that links them, x̂₀ = (x_t − √(1−ᾱ_t)·ε̂) ÷ √ᾱ_t, with the
+schedule's numbers at the current step: the network outputs only ε̂, and x̂₀ is arithmetic on it.
 
 **Where the randomness lives.** One image encoded five times gives five slightly different
 reconstructions, because the encoder emits a distribution rather than a point. Three reverse runs
@@ -51,6 +57,12 @@ size; it never forms an embedding at all.
 **What is being optimised.** The reconstruction and KL terms over training epochs, pulling against
 each other. The KL term rising while the total falls is not a failure; it is the encoder buying
 reconstruction accuracy by moving the posterior away from the prior.
+
+**Diffusion is trained on the same kind of bound.** The two bounds term by term (latent, encoder,
+reconstruction, prior, per-step terms), treating diffusion as a VAE with 200 latent layers and a
+fixed encoder. Beneath it, computed from the model's own schedule, the weight the bound would give
+each timestep against the equal weighting of the simplified loss the model was actually trained
+with, which is why the page calls both objectives ELBO-style rather than identical.
 
 **Changing the size of the latent space.** The same model trained at four latent sizes (1, 2, 8
 and 32) reconstructing the same digits. More dimensions means better reconstruction and less
@@ -108,11 +120,24 @@ the notebooks' own schedule functions rather than reimplementing anything.
 | `T19_export_scatter_labels.py` | the latent scatter, with digit labels |
 | `T20_export_latent_dims.py` | four VAEs at different latent sizes |
 | `T23_export_decoder_layers.py` | decoder activations over a 12×12 grid of latent positions |
+| `T30_export_reverse_start.py` | x_T for the three reverse runs, rebuilt from their seeds (no model needed) |
+| `T31_export_vae_decoder_tfjs.py` | the lab decoder for the browser, refused unless it reproduces T23's grid |
 
 ## Known approximations
 
-- **Decoder activations depend on z**, so they are precomputed over a 12×12 grid of latent
-  positions and a click snaps to the nearest.
+- **Decoder activations depend on z.** They are precomputed over a 12×12 grid of latent
+  positions, and without a live model a click snaps to the nearest grid point; the page then names
+  the grid point it is showing. Once T31 has bundled the lab decoder as a TensorFlow.js model, the
+  page decodes the exact z instead, but only after checking on load that the bundled model
+  reproduces all 144 precomputed images. A decoder from a different training run fails that check
+  and the grid stays in use.
+- **The training curves come from an earlier run.** Every other VAE figure, and the live
+  decoder, comes from the checkpointed weights. The loss curves come from the original training
+  run of the same code and settings: the checkpointed retrain's per-epoch history was not kept,
+  and retraining to regenerate it would produce different weights again.
+- **The diffusion draws are not fresh.** All three reverse runs are precomputed, so "new noise
+  image" steps through three stored starting noises. A genuinely new draw would need 200 U-Net
+  passes in the browser.
 - **MNIST-scale models.** Sample quality is modest and visible. The tool is about the concepts,
   not about the behaviour of large generative models.
 - **Two PCA components explain less of a 32-dimensional space** than of an 8-dimensional one, so

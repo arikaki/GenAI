@@ -43,7 +43,7 @@ async function main(){
   const veil = $('loading');
 
   let manifoldMeta, manifoldImg, sched, revMeta, sheets,
-      reconMeta, reconImg, scatter, dec, decImg;
+      reconMeta, reconImg, scatter, dec, decImg, startImg;
   try {
     [manifoldMeta, manifoldImg, sched, revMeta, reconMeta, reconImg, scatter] =
       await Promise.all([
@@ -58,6 +58,8 @@ async function main(){
     // decoder stations are optional — the page still works before T23 is run
     dec    = await optional(loadJSON('layers_vae_decoder.json'));
     decImg = dec ? await optional(loadImage('layers_vae_decoder.png')) : null;
+    // x_T itself: reverse.png starts one step in, at x_198. Optional (T30).
+    startImg = await optional(loadImage('reverse_start.png'));
   } catch (err) {
     veil.classList.add('is-error');
     veil.innerHTML = '<span>Could not load the model outputs.<br>' +
@@ -130,13 +132,118 @@ async function main(){
   if (decStations) paStep.max = decStations.length - 1;
   else { paStep.disabled = true; paStep.max = 0; }
 
-  const gridIndex = () => {
-    if (!dec) return 0;
-    const N = dec.grid;
-    const col = Math.min(N-1, Math.max(0, Math.round((z[0] - LO)/(HI - LO)*(N-1))));
-    const row = Math.min(N-1, Math.max(0, Math.round((HI - z[1])/(HI - LO)*(N-1))));
-    return row * N + col;
+  const gridCell = () => {
+    const N = dec.grid, [gLo, gHi] = dec.range;
+    const col = Math.min(N-1, Math.max(0, Math.round((z[0] - gLo)/(gHi - gLo)*(N-1))));
+    const row = Math.min(N-1, Math.max(0, Math.round((gHi - z[1])/(gHi - gLo)*(N-1))));
+    return { index: row * N + col,
+             z: [gLo + col/(N-1)*(gHi - gLo), gHi - row/(N-1)*(gHi - gLo)] };
   };
+
+  /* Decoder activations depend on z. The sprite holds them for a 12x12 grid
+     only, so without a live model a click snaps to the nearest grid point.
+     When the lab decoder is bundled (T31) and reproduces that grid, every
+     station is computed from the exact z instead. */
+  let liveDec = null;
+
+  /* Same rendering as T23's to_tile: channel mean for spatial layers, dense
+     vectors padded into a square, each tile normalised to its own range. */
+  function drawActivation(cv, vals, shape){
+    let h, w, img;
+    if (shape.length === 3){
+      const C = shape[2];
+      h = shape[0]; w = shape[1]; img = new Float32Array(h * w);
+      for (let p = 0; p < h * w; p++){
+        let s = 0;
+        for (let c = 0; c < C; c++) s += vals[p * C + c];
+        img[p] = s / C;
+      }
+    } else {
+      h = w = Math.ceil(Math.sqrt(vals.length));
+      img = new Float32Array(h * w); img.set(vals);
+    }
+    let lo = Infinity, hi = -Infinity;
+    for (const v of img){ if (v < lo) lo = v; if (v > hi) hi = v; }
+    const off = document.createElement('canvas');
+    off.width = w; off.height = h;
+    const octx = off.getContext('2d'), id = octx.createImageData(w, h);
+    img.forEach((v, p) => {
+      const g = hi > lo ? Math.round((v - lo) / (hi - lo) * 255) : 0;
+      id.data[p*4] = id.data[p*4+1] = id.data[p*4+2] = g; id.data[p*4+3] = 255;
+    });
+    octx.putImageData(id, 0, 0);
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(off, 0, 0, cv.width, cv.height);
+  }
+
+  function liveActivations(zv){
+    let out;
+    tf.tidy(() => {
+      const ys = liveDec.probe.predict(tf.tensor2d([zv]));
+      out = [Float32Array.from(zv)]
+        .concat((Array.isArray(ys) ? ys : [ys]).map(t => Float32Array.from(t.dataSync())));
+    });
+    return out;
+  }
+
+  /* Verify before trusting, as the drawing pad does: decode all grid points
+     live and compare the final image with the precomputed sprite. A decoder
+     from a different training run fails this and the grid stays in use. */
+  async function initLiveDecoder(){
+    if (!decStations || !decImg || typeof tf === 'undefined') return;
+    let model;
+    try { model = await tf.loadLayersModel('tfjs/vae_decoder/model.json'); }
+    catch (e) { return; }                       // not exported yet: grid it is
+    try {
+      // by order, not name: Keras renumbers layer names on every rebuild
+      const layers = model.layers.filter(l => l.getClassName() !== 'InputLayer');
+      if (layers.length !== decStations.length - 1)
+        throw new Error('layer count differs from layers_vae_decoder.json');
+      const outs = layers.map(l => l.output);
+      const probe = tf.model({ inputs: model.inputs, outputs: outs });
+      const shapesOk = outs.every((o, k) =>
+        o.shape.slice(1).join() === decStations[k + 1].shape.join());
+      if (!shapesOk) throw new Error('layer shapes differ from layers_vae_decoder.json');
+
+      const N = dec.grid, [gLo, gHi] = dec.range, TL = dec.tile;
+      const zs = [];
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
+        zs.push([gLo + c/(N-1)*(gHi - gLo), gHi - r/(N-1)*(gHi - gLo)]);
+      const last = tf.tidy(() => model.predict(tf.tensor2d(zs)));
+      const imgs = await last.data(); last.dispose();
+
+      const sc = document.createElement('canvas');
+      sc.width = decImg.width; sc.height = decImg.height;
+      const sctx = sc.getContext('2d');
+      sctx.drawImage(decImg, 0, 0);
+      const col = decStations.length - 1;
+      const [oh, ow] = decStations[col].shape, n = oh * ow;
+      let err = 0;
+      for (let p = 0; p < zs.length; p++){
+        const tile = sctx.getImageData(col * TL, p * TL, TL, TL).data;
+        const im = imgs.subarray(p * n, (p + 1) * n);
+        let lo = Infinity, hi = -Infinity;
+        for (const v of im){ if (v < lo) lo = v; if (v > hi) hi = v; }
+        let e = 0;
+        for (let y = 0; y < TL; y++) for (let x = 0; x < TL; x++){
+          // PIL NEAREST, as used by T23 to scale each tile up to TL
+          const sy = Math.floor((y + .5) * oh / TL), sx = Math.floor((x + .5) * ow / TL);
+          const v = hi > lo ? (im[sy * ow + sx] - lo) / (hi - lo) : 0;
+          e += Math.abs(v - tile[(y * TL + x) * 4] / 255);
+        }
+        err += e / (TL * TL);
+      }
+      err /= zs.length;
+      if (err > 0.02) throw new Error('live decoder does not reproduce the grid ' +
+                                      '(mean error ' + err.toFixed(3) + ')');
+      liveDec = { probe, err };
+      paintChannelA();
+    } catch (e) {
+      console.warn('Decoder stays on the precomputed grid:', e.message);
+    }
+  }
 
   function paintChannelA(){
     const i = +paStep.value;
@@ -151,10 +258,23 @@ async function main(){
       $('paNote').innerHTML =
         'Run <code>T23_export_decoder_layers.py</code> to step through the decoder layers. ' +
         'The final image is shown meanwhile.';
+      $('paSource').textContent = '';
       return;
     }
-    const st = decStations[i], p = gridIndex();
-    drawTile($('paImage').getContext('2d'), decImg, i, p, dec.tile, 0);
+    const st = decStations[i];
+    let paint;
+    if (liveDec){
+      const acts = liveActivations(z);
+      paint = (cv, k) => drawActivation(cv, acts[k], decStations[k].shape);
+      $('paSource').textContent = 'every layer below is decoded live from exactly this vector';
+    } else {
+      const g = gridCell(), p = g.index;
+      paint = (cv, k) => drawTile(cv.getContext('2d'), decImg, k, p, dec.tile, 0);
+      $('paSource').textContent = 'layers precomputed: shown for the nearest of ' +
+        dec.grid * dec.grid + ' grid points, z = (' + g.z[0].toFixed(2) + ', ' +
+        g.z[1].toFixed(2) + ')';
+    }
+    paint($('paImage'), i);
     $('paName').textContent  = st.name;
     $('paShape').textContent = st.shape.join('×');
     $('paCount').textContent = st.elements.toLocaleString('en-US');
@@ -166,7 +286,7 @@ async function main(){
       el.className = 'station' + (k === i ? ' is-current' : '');
       const cv = document.createElement('canvas');
       cv.width = cv.height = 44;
-      drawTile(cv.getContext('2d'), decImg, k, p, dec.tile, 0);
+      paint(cv, k);
       const holder = document.createElement('div');
       holder.className = 'station__tile'; holder.appendChild(cv);
       const num = document.createElement('div');
@@ -209,12 +329,35 @@ async function main(){
     drawTile($('pbImage').getContext('2d'), sheets[view], i, seed, dTile, 0);
     $('pbT').textContent = 't = ' + t;
     paintSched(t);
+    paintEquation(i, t);
     renderCompare();
   }
 
-  /* ── the starting noise tile: column 0 of the reverse sheet is x_T ── */
+  /* x_t as it went into the network at slider position i. Column k of
+     reverse.png holds the state *after* step k, so the input is column i-1;
+     the very first input, x_T, is a separate export. */
+  function paintInput(cv, i){
+    if (i > 0) drawTile(cv.getContext('2d'), sheets.reverse, i - 1, seed, dTile, 0);
+    else if (startImg) drawTile(cv.getContext('2d'), startImg, 0, seed, dTile, 0);
+    else drawTile(cv.getContext('2d'), sheets.reverse, 0, seed, dTile, 0);
+  }
+
+  /* The x_t / eps / x0 toggle shows one view at a time, so a sharpening x0
+     can be read as the network drawing. This strip shows all three at once,
+     with the schedule's numbers, so x0 is visibly arithmetic on the other two. */
+  function paintEquation(i, t){
+    if (!$('eqXt')) return;
+    paintInput($('eqXt'), i);
+    drawTile($('eqEps').getContext('2d'), sheets.eps, i, seed, dTile, 0);
+    drawTile($('eqX0').getContext('2d'), sheets.x0, i, seed, dTile, 0);
+    $('eqA').textContent = sched.sqrt_one_minus_abar[t].toFixed(2);
+    $('eqB').textContent = sched.sqrt_alpha_bar[t].toFixed(2);
+    $('eqT').textContent = 't = ' + t;
+  }
+
+  /* ── the starting noise tile: x_T itself ── */
   function paintStartNoise(){
-    drawTile($('startNoise').getContext('2d'), sheets.reverse, 0, seed, dTile, 0);
+    paintInput($('startNoise'), 0);
     $('pbFrom').textContent = 'draw ' + (seed + 1) + ' of ' + SEEDS;   // T29
   }
 
@@ -315,7 +458,9 @@ async function main(){
   buildLayers();
   buildDims();
   buildElbo();
+  buildBound();
   buildEmbed().then(buildDraw);
+  initLiveDecoder();
   veil.classList.add('is-gone');
 
 
@@ -448,6 +593,62 @@ async function main(){
       Math.round(first.recon / first.kl) + '×: pushing it down means encoding more about each ' +
       'image, which is exactly what pulls the encoder\'s distribution away from the standard ' +
       'normal it is penalised for leaving.';
+  }
+
+  /* ── C3: diffusion is trained on the same kind of bound ──
+     Written as a VAE with T latent layers, the diffusion bound has one KL
+     term per step, and each reduces to a weighted squared error on the
+     predicted noise (Ho et al. 2020, eq. 12):
+       lambda_t = beta_t^2 / (2 sigma_t^2 alpha_t (1 - abar_t)),
+     with sigma_t^2 = beta_t as in the lab sampler. The model was trained on
+     the simplified loss, plain MSE on the noise with every step weighted
+     equally. Both curves come from this model's own schedule; t = 0 is the
+     reconstruction term, not a KL term, and is left out. */
+  function buildBound(){
+    const c = $('boundChart');
+    if (!c) return;
+    const g = c.getContext('2d');
+    const W = c.width, H = c.height, padL = 46, padR = 16, padT = 16, padB = 26;
+    const ts = [];
+    for (let t = 1; t < T; t++) ts.push(t);
+    const raw = ts.map(t => sched.beta[t] / (2 * sched.alpha[t] * (1 - sched.alpha_bar[t])));
+    const mean = raw.reduce((s, v) => s + v, 0) / raw.length;
+    const lam = raw.map(v => v / mean);           // scaled so both curves average 1
+    const lgLo = Math.floor(Math.log10(Math.min(...lam))),
+          lgHi = Math.ceil(Math.log10(Math.max(...lam)));
+    // x runs noise -> image like the slider: t = T-1 on the left, t = 1 on the right
+    const px = t => padL + (T - 1 - t) / (T - 2) * (W - padL - padR);
+    const py = v => (H - padB) - (Math.log10(v) - lgLo) / (lgHi - lgLo) * (H - padT - padB);
+    const BOUND_C = '#B4436C', SIMPLE_C = '#16808E';
+
+    g.clearRect(0, 0, W, H);
+    g.font = '11px ui-monospace, Consolas, monospace';
+    for (let e = lgLo; e <= lgHi; e++){
+      const y = py(10 ** e);
+      g.strokeStyle = '#E3E8ED'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(padL, y); g.lineTo(W - padR, y); g.stroke();
+      g.fillStyle = '#939EA9'; g.textAlign = 'right';
+      g.fillText(String(+(10 ** e).toPrecision(1)), padL - 6, y + 4);
+    }
+    g.strokeStyle = SIMPLE_C; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(px(T - 1), py(1)); g.lineTo(px(1), py(1)); g.stroke();
+    g.strokeStyle = BOUND_C; g.lineWidth = 2;
+    g.beginPath();
+    ts.forEach((t, k) => k ? g.lineTo(px(t), py(lam[k])) : g.moveTo(px(t), py(lam[k])));
+    g.stroke();
+    g.fillStyle = '#939EA9';
+    g.textAlign = 'left';  g.fillText('t = ' + (T - 1) + ' · noise', padL, H - 8);
+    g.textAlign = 'right'; g.fillText('image · t = 1', W - padR, H - 8);
+
+    const ratio = Math.round(lam[0] / lam[lam.length - 1]);
+    const cross = ts.find((t, k) => lam[k] < 1);
+    $('verdictBound').innerHTML =
+      'Taken literally, the bound would weight the step nearest the image <strong>' + ratio +
+      '×</strong> more heavily than the step nearest pure noise. The model on this page was ' +
+      'trained the way Ho et al. (2020) recommend: every step weighted equally, which in effect ' +
+      'shifts emphasis away from the ' + (cross - 1) + ' steps closest to the image. ' +
+      'It is a <strong>reweighted</strong> version of the bound, not the bound itself, which is ' +
+      'why this page calls both objectives ELBO-style rather than identical.';
   }
 
   /* ── T25 Stage 1: the same image, three latent spaces ────
