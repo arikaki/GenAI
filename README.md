@@ -131,6 +131,10 @@ the notebooks' own schedule functions rather than reimplementing anything.
   page decodes the exact z instead, but only after checking on load that the bundled model
   reproduces all 144 precomputed images. A decoder from a different training run fails that check
   and the grid stays in use.
+- **The training curves come from an earlier run.** Every other VAE figure, and the live
+  decoder, comes from the checkpointed weights. The loss curves come from the original training
+  run of the same code and settings: the checkpointed retrain's per-epoch history was not kept,
+  and retraining to regenerate it would produce different weights again.
 - **The diffusion draws are not fresh.** All three reverse runs are precomputed, so "new noise
   image" steps through three stored starting noises. A genuinely new draw would need 200 U-Net
   passes in the browser.
