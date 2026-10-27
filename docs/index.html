@@ -111,7 +111,9 @@
         <h3 class="draw__title">1024 numbers</h3>
         <div class="draw__tile"><canvas id="startNoise" width="128" height="128"
              aria-label="The 1024-dimensional starting noise, shown as a 32 by 32 image"></canvas></div>
-        <p class="draw__note">The same kind of draw, one value per pixel. It can only be shown as a picture.</p>
+        <p class="draw__note">The same kind of draw, one value per pixel. It can only be shown as a picture.
+          The two hundred steps that follow it are precomputed, so this button steps through three
+          stored draws rather than making a new one.</p>
         <button class="ghost" id="newDrawDif">new noise image</button>
       </div>
 
@@ -137,6 +139,7 @@
       starting from the latent vector you chose above:
       <span class="num" id="paFrom">z = (0.00, 0.00)</span>
     </p>
+    <p class="proc__source" id="paSource"></p>
   </div>
 
   <div class="proc__grid">
@@ -203,6 +206,27 @@
       </p>
     </div>
   </div>
+  <div class="eq" aria-labelledby="eq-title">
+    <p class="eq__head"><span id="eq-title">All three at once</span> <span class="num" id="eqT">t = 199</span></p>
+    <div class="eq__row">
+      <span class="eq__op">(</span>
+      <figure><canvas id="eqXt" width="96" height="96"></canvas>
+        <figcaption><b>x<sub>t</sub></b>what goes in</figcaption></figure>
+      <span class="eq__op">&minus; <span class="num" id="eqA">0.93</span> &times;</span>
+      <figure><canvas id="eqEps" width="96" height="96"></canvas>
+        <figcaption><b>&epsilon;&#770;</b>the network&rsquo;s only output</figcaption></figure>
+      <span class="eq__op">) &divide; <span class="num" id="eqB">0.37</span> =</span>
+      <figure class="eq__result"><canvas id="eqX0" width="96" height="96"></canvas>
+        <figcaption><b>x&#770;<sub>0</sub></b>arithmetic, not output</figcaption></figure>
+    </div>
+    <p class="cmp__note">
+      The network outputs only the middle image, a guess at the noise. The right-hand image is
+      computed from the two to its left: subtract the predicted noise, scaled by the schedule, and
+      rescale. It sharpens as you move towards the image because the noise estimate gets better,
+      not because anything is drawing a digit.
+    </p>
+  </div>
+
   <div class="sched"><canvas id="pbSched" width="880" height="120"
        aria-label="Alpha-bar schedule with the current timestep marked"></canvas></div>
 </section>
@@ -280,6 +304,63 @@
   <p class="verdict" id="verdictElbo"></p>
 </section>
 
+<section class="elbo bound" aria-labelledby="bound-title">
+  <div class="compare__head">
+    <p class="eyebrow">One objective, two architectures</p>
+    <div class="tags"><span class="tag tag--vae">Variational Autoencoder</span><span class="tag tag--dif">Diffusion Model</span></div>
+    <h2 id="bound-title">Diffusion is trained on the same kind of bound</h2>
+    <p class="standfirst">
+      The VAE above maximises a lower bound on how likely the data is, the ELBO. A diffusion model
+      can be written as a VAE with two hundred latent layers, and its training loss comes from the
+      same kind of bound. Term by term:
+    </p>
+  </div>
+
+  <div class="bound__table" role="table" aria-label="The two bounds, term by term">
+    <div class="bound__row bound__row--head" role="row">
+      <span role="columnheader"></span>
+      <span role="columnheader" class="bound__vae">Variational Autoencoder</span>
+      <span role="columnheader" class="bound__dif">Diffusion Model</span>
+    </div>
+    <div class="bound__row" role="row">
+      <span role="rowheader">latent</span>
+      <span role="cell"><i>z</i>: 2 numbers, one layer</span>
+      <span role="cell"><i>x</i><sub>1</sub> &hellip; <i>x</i><sub>T</sub>: 200 layers of 1,024 numbers, each the size of the image</span>
+    </div>
+    <div class="bound__row" role="row">
+      <span role="rowheader">encoder</span>
+      <span role="cell">a trained network, <i>q</i>(<i>z</i> | <i>x</i>)</span>
+      <span role="cell">the fixed noise schedule, <i>q</i>(<i>x</i><sub>t</sub> | <i>x</i><sub>t&minus;1</sub>): no trainable parameters</span>
+    </div>
+    <div class="bound__row" role="row">
+      <span role="rowheader">reconstruction</span>
+      <span role="cell">log <i>p</i>(<i>x</i> | <i>z</i>): decode the latent, compare with the input</span>
+      <span role="cell">log <i>p</i>(<i>x</i><sub>0</sub> | <i>x</i><sub>1</sub>): the last denoising step</span>
+    </div>
+    <div class="bound__row" role="row">
+      <span role="rowheader">prior</span>
+      <span role="cell">KL(<i>q</i>(<i>z</i> | <i>x</i>) &Vert; N(0, I)): the term that rises during training, above</span>
+      <span role="cell">KL(<i>q</i>(<i>x</i><sub>T</sub> | <i>x</i><sub>0</sub>) &Vert; N(0, I)): fixed by the schedule, nothing to learn</span>
+    </div>
+    <div class="bound__row" role="row">
+      <span role="rowheader">per step</span>
+      <span role="cell">none: there is only one latent layer</span>
+      <span role="cell">one KL term per step, each a <strong>weighted squared error on the predicted noise</strong></span>
+    </div>
+  </div>
+
+  <div class="elbo__chart">
+    <canvas id="boundChart" width="880" height="220"
+            aria-label="Weight per timestep: the bound against the simplified loss the model was trained with"></canvas>
+    <div class="elbo__legend">
+      <span class="elbo__key elbo__key--recon"><i></i>weight the bound gives each step</span>
+      <span class="elbo__key elbo__key--kl"><i></i>weight in the loss actually used (equal)</span>
+    </div>
+  </div>
+
+  <p class="verdict" id="verdictBound"></p>
+</section>
+
 <section class="dims" aria-labelledby="dims-title">
   <div class="compare__head">
     <p class="eyebrow">How small can it get?</p>
@@ -336,8 +417,9 @@
 
 <footer class="foot">
   <p>MNIST-scale models trained for this project. Everything above is precomputed except the
-    drawing pad, which runs live in your browser: the encoders are bundled here as
-    TensorFlow.js models, so it works with no network connection.</p>
+    drawing pad, and the decoder when it says it is decoding live. Those run in your browser:
+    the models are bundled here as TensorFlow.js files, so they work with no network
+    connection.</p>
 </footer>
 
 <div class="loading" id="loading"><span>loading model outputs…</span></div>

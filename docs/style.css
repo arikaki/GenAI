@@ -633,3 +633,76 @@ body{
 }
 .leadout strong{color:var(--ink);font-weight:660}
 .leadout em{color:var(--ink);font-style:italic}
+
+/* ─── the decoder says where its layers came from ──────── */
+
+.proc__source{
+  margin:.3rem 0 0;
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.02em;
+  color:var(--muted);
+}
+
+/* ─── C2 · eps and x0 on screen together ────────────────
+   The toggle above shows one view at a time; this strip shows the
+   arithmetic that links them, at the slider's current step. */
+
+.eq{
+  margin-top:1.1rem;padding:.85rem 1rem;
+  background:#fff;border:1px solid var(--rule);border-radius:2px;
+}
+.eq__head{
+  margin:0 0 .6rem;display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);
+}
+.eq__head .num{letter-spacing:0;text-transform:none;color:var(--chan);font-size:.75rem}
+.eq__row{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:.5rem .6rem;margin-bottom:.7rem;
+}
+.eq__row figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:.3rem}
+.eq__row canvas{
+  width:96px;height:96px;image-rendering:pixelated;display:block;
+  background:var(--plate);border-radius:2px;
+}
+.eq__result canvas{outline:2px solid var(--chan);outline-offset:2px}
+.eq__row figcaption{
+  display:flex;flex-direction:column;align-items:center;
+  font-size:.7rem;color:var(--muted);text-align:center;max-width:7.5rem;line-height:1.3;
+}
+.eq__row figcaption b{font-size:.9rem;color:var(--ink);font-weight:660}
+.eq__op{
+  font-family:var(--mono);font-size:1rem;color:var(--ink);white-space:nowrap;
+  padding-bottom:2.2rem;
+}
+.eq__op .num{color:var(--chan)}
+
+/* ─── C3 · the two bounds, term by term ────────────────── */
+
+.bound__table{
+  background:var(--panel);border:1px solid var(--rule);border-radius:3px;
+  margin-bottom:1rem;font-size:.86rem;
+}
+.bound__row{
+  display:grid;grid-template-columns:8.5rem 1fr 1fr;gap:1rem;
+  padding:.6rem 1rem;border-top:1px solid var(--rule);
+}
+.bound__row:first-child{border-top:none}
+.bound__row [role=rowheader]{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);padding-top:.15rem;
+}
+.bound__row--head span{
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;
+  font-weight:600;
+}
+.bound__vae{color:var(--vae)}
+.bound__dif{color:var(--dif)}
+.bound .elbo__chart{margin-bottom:0}
+
+@media (max-width:760px){
+  .bound__row{grid-template-columns:1fr;gap:.25rem}
+  .bound__row--head{display:none}
+  .bound__row [role=cell]:nth-of-type(2)::before{content:"VAE · ";color:var(--vae);font-family:var(--mono);font-size:.7rem}
+  .bound__row [role=cell]:nth-of-type(3)::before{content:"Diffusion · ";color:var(--dif);font-family:var(--mono);font-size:.7rem}
+}

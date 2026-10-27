@@ -70,7 +70,7 @@ def fix_model_json(path):
 
 
 if __name__ == "__main__":
-    paths = glob.glob(os.path.join(REPO, "docs", "tfjs", "dim*", "*", "model.json"))
+    paths = glob.glob(os.path.join(REPO, "docs", "tfjs", "**", "model.json"), recursive=True)
     for p in paths:
         fix_model_json(p)
         print("fixed", os.path.relpath(p, REPO))
