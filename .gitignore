@@ -4,3 +4,4 @@ web/
 .venv_tfjs/
 __pycache__/
 .gitignore
+node_modules/

@@ -1,0 +1,12 @@
+{
+  "name": "two-ways-to-make-an-image",
+  "private": true,
+  "description": "Checks for the static explainer in docs/; the site itself has no build step.",
+  "scripts": {
+    "check:page": "node tests/page_check.mjs",
+    "calibrate": "node tests/calibrate_selfchecks.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
