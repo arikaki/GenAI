@@ -18,7 +18,7 @@
    "branch": "main"
   },
   {
-   "name": "dense_1",
+   "name": "dense",
    "type": "Dense",
    "shape": [
     3136
