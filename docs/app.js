@@ -717,8 +717,23 @@ async function main(){
     g.fillStyle = KL_C; g.textAlign = 'right';
     g.fillText(kMax.toFixed(1), W - 4, pyK(kMax) + 4);
     g.fillText(kMin.toFixed(1), W - 4, pyK(kMin) + 4);
-    g.fillStyle = '#939EA9'; g.textAlign = 'center';
-    losses.forEach((r, i) => g.fillText('epoch ' + r.epoch, px(i), H - 8));
+    /* Epoch numbers, thinned to a step that keeps them from colliding: one
+       label per point fits a short run, not a 30-epoch one. The last epoch is
+       always labelled; a regular label too close to it is dropped. */
+    const gap = 10;
+    const spacing = n > 1 ? (W - padL - padR) / (n - 1) : Infinity;
+    const widest = Math.max(...losses.map(r => g.measureText(String(r.epoch)).width));
+    const step = [1, 2, 5, 10, 20, 50, 100, 200, 500].find(s => s * spacing >= widest + gap) || n;
+    const ticks = losses.map((r, i) => i).filter(i => i % step === 0 || i === n - 1)
+      .filter((i, k, all) => i === n - 1 || (n - 1 - i) * spacing >= widest + gap || all.length === 1);
+    g.fillStyle = '#939EA9'; g.strokeStyle = '#C6CDD5'; g.lineWidth = 1;
+    g.textAlign = 'center';
+    for (const i of ticks){
+      g.beginPath(); g.moveTo(px(i), H - padB); g.lineTo(px(i), H - padB + 4); g.stroke();
+      g.fillText(String(losses[i].epoch), px(i), H - 8);
+    }
+    g.textAlign = 'right';
+    g.fillText('epoch', padL - 8, H - 8);
 
     const first = losses[0], last = losses[n - 1];
     const reconDrop = Math.round((1 - last.recon / first.recon) * 100);
