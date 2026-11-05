@@ -35,8 +35,9 @@ back to if the live decoder is missing or fails its self-check.
 
 **Diffusion Model.** Two hundred denoising steps, with a toggle between the noisy state x_t, the
 network's actual output ε̂, and the clean-image estimate x̂₀ recovered from it. Dragging through
-the steps with x̂₀ selected shows a blurred average sharpening into a digit, an image the network
-never draws, only implies. Because a toggle shows one view at a time, a strip beneath it shows
+the steps with x̂₀ selected shows speckle at the noisiest steps, where recovering x̂₀ divides small
+errors in ε̂ by a number close to zero, then a blurred average sharpening into a digit: an image the
+network never draws, only implies. Because a toggle shows one view at a time, a strip beneath it shows
 all three at once as the equation that links them, x̂₀ = (x_t − √(1−ᾱ_t)·ε̂) ÷ √ᾱ_t, with the
 schedule's numbers at the current step: the network outputs only ε̂, and x̂₀ is arithmetic on it.
 

@@ -26,7 +26,9 @@ const NOTES = {
   eps:     'What the network actually outputs: an estimate of the <em>noise</em> present at step ' +
            '<em>t</em>. Not a picture of a digit.',
   x0:      'The network never draws this. It is computed from &epsilon;&#770; by rearranging the ' +
-           'forward equation: blurry early, sharp late.'
+           'forward equation. At the noisiest steps that means dividing by a number close to zero, ' +
+           'so small errors in &epsilon;&#770; blow up into speckle; then a blurred average appears ' +
+           'and sharpens into a digit.'
 };
 
 const CLASS_COLOURS = ['#4E79A7','#F28E2B','#E15759','#76B7B2','#59A14F',
