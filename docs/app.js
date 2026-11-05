@@ -58,6 +58,28 @@ function drawTile(ctx, sheet, col, row, tile, pad){
   ctx.drawImage(sheet, col * s, row * s, tile, tile, 0, 0, c.width, c.height);
 }
 
+/* Charts are drawn at the size they are shown, in CSS pixels at the device's
+   resolution. Drawn once at 880px and scaled down to a phone, their text
+   shrank to about 4px. Height follows width, within limits. */
+function fitCanvas(c, ratio, minH, maxH){
+  const W = c.clientWidth;
+  if (!W) return null;                       // not laid out (e.g. section hidden)
+  const H = Math.round(Math.min(maxH, Math.max(minH, W * ratio)));
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+  if (c.width !== bw || c.height !== bh){ c.width = bw; c.height = bh; }
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, W, H);
+  return { g, W, H };
+}
+const resizers = [];
+let resizeRaf = 0;
+window.addEventListener('resize', () => {
+  cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => resizers.forEach(f => f()));
+});
+
 async function main(){
   const veil = $('loading');
 
@@ -331,9 +353,9 @@ async function main(){
   pbStep.max = T - 1;
 
   function paintSched(t){
-    const c = $('pbSched'), g = c.getContext('2d');
-    const W = c.width, H = c.height, pad = 14;
-    g.clearRect(0, 0, W, H);
+    const fit = fitCanvas($('pbSched'), 0.136, 90, 130);
+    if (!fit) return;
+    const { g, W, H } = fit, pad = 14;
     g.strokeStyle = '#E3E8ED'; g.lineWidth = 1;
     g.beginPath(); g.moveTo(pad, H - pad); g.lineTo(W - pad, H - pad); g.stroke();
     /* x runs noise -> image, matching the slider. Column i holds t = T-1-i, so
@@ -350,6 +372,7 @@ async function main(){
     g.fillStyle = '#16808E'; g.strokeStyle = '#fff'; g.lineWidth = 2;
     g.beginPath(); g.arc(x, y, 5, 0, Math.PI * 2); g.fill(); g.stroke();
   }
+  resizers.push(() => paintSched(T - 1 - +pbStep.value));
 
   /* The trajectory on show: a stored run (row `seed` of the exported sheets)
      or one sampled live in this browser (`live`, one row per view). */
@@ -683,57 +706,72 @@ async function main(){
     try { losses = await loadJSON('vae_losses.json'); }
     catch (e) { document.querySelector('.elbo').style.display = 'none'; return; }
 
-    const c = $('elboChart'), g = c.getContext('2d');
-    const W = c.width, H = c.height, padL = 42, padR = 42, padT = 16, padB = 26;
     const n = losses.length;
     const recon = losses.map(r => r.recon), kl = losses.map(r => r.kl);
     const rMin = Math.min(...recon), rMax = Math.max(...recon);
     const kMin = Math.min(...kl), kMax = Math.max(...kl);
     const RECON_C = '#B4436C', KL_C = '#16808E';
 
-    const px  = i => padL + (n === 1 ? 0 : i / (n - 1) * (W - padL - padR));
-    const pyR = v => (H - padB) - (rMax > rMin ? (v - rMin) / (rMax - rMin) : .5) * (H - padT - padB);
-    const pyK = v => (H - padB) - (kMax > kMin ? (v - kMin) / (kMax - kMin) : .5) * (H - padT - padB);
+    function draw(){
+      const fit = fitCanvas($('elboChart'), 0.3, 190, 280);
+      if (!fit) return;
+      const { g, W, H } = fit, padL = 42, padR = 42, padT = 16, padB = 26;
 
-    g.clearRect(0, 0, W, H);
-    g.strokeStyle = '#E3E8ED'; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(padL, H - padB); g.lineTo(W - padR, H - padB); g.stroke();
+      const px  = i => padL + (n === 1 ? 0 : i / (n - 1) * (W - padL - padR));
+      const pyR = v => (H - padB) - (rMax > rMin ? (v - rMin) / (rMax - rMin) : .5) * (H - padT - padB);
+      const pyK = v => (H - padB) - (kMax > kMin ? (v - kMin) / (kMax - kMin) : .5) * (H - padT - padB);
 
-    function line(vals, py, color){
-      g.strokeStyle = color; g.lineWidth = 2;
-      g.beginPath();
-      vals.forEach((v, i) => i ? g.lineTo(px(i), py(v)) : g.moveTo(px(i), py(v)));
-      g.stroke();
-      g.fillStyle = color;
-      vals.forEach((v, i) => { g.beginPath(); g.arc(px(i), py(v), 3, 0, Math.PI * 2); g.fill(); });
+      g.clearRect(0, 0, W, H);
+      g.strokeStyle = '#E3E8ED'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(padL, H - padB); g.lineTo(W - padR, H - padB); g.stroke();
+
+      function line(vals, py, color){
+        g.strokeStyle = color; g.lineWidth = 2;
+        g.beginPath();
+        vals.forEach((v, i) => i ? g.lineTo(px(i), py(v)) : g.moveTo(px(i), py(v)));
+        g.stroke();
+        g.fillStyle = color;
+        vals.forEach((v, i) => { g.beginPath(); g.arc(px(i), py(v), 3, 0, Math.PI * 2); g.fill(); });
+      }
+      line(recon, pyR, RECON_C);
+      line(kl, pyK, KL_C);
+
+      g.font = '11px ui-monospace, Consolas, monospace';
+      g.fillStyle = RECON_C; g.textAlign = 'left';
+      g.fillText(rMax.toFixed(0), 4, pyR(rMax) + 4);
+      g.fillText(rMin.toFixed(0), 4, pyR(rMin) + 4);
+      g.fillStyle = KL_C; g.textAlign = 'right';
+      g.fillText(kMax.toFixed(1), W - 4, pyK(kMax) + 4);
+      g.fillText(kMin.toFixed(1), W - 4, pyK(kMin) + 4);
+      /* Epoch numbers, thinned to a step that keeps them from colliding: one
+         label per point fits a short run, not a 30-epoch one. The last epoch is
+         always labelled; a regular label too close to it is dropped. */
+      const gap = 10;
+      const spacing = n > 1 ? (W - padL - padR) / (n - 1) : Infinity;
+      const widest = Math.max(...losses.map(r => g.measureText(String(r.epoch)).width));
+      const step = [1, 2, 5, 10, 20, 50, 100, 200, 500].find(s => s * spacing >= widest + gap) || n;
+      // the first epoch, round multiples of the step, and the last; a label
+      // that would touch the one before it is dropped (the last one wins)
+      const ticks = [];
+      losses.forEach((r, i) => {
+        if (i !== 0 && i !== n - 1 && r.epoch % step !== 0) return;
+        while (ticks.length && (i - ticks[ticks.length - 1]) * spacing < widest + gap) {
+          if (i !== n - 1) return;
+          ticks.pop();
+        }
+        ticks.push(i);
+      });
+      g.fillStyle = '#939EA9'; g.strokeStyle = '#C6CDD5'; g.lineWidth = 1;
+      g.textAlign = 'center';
+      for (const i of ticks){
+        g.beginPath(); g.moveTo(px(i), H - padB); g.lineTo(px(i), H - padB + 4); g.stroke();
+        g.fillText(String(losses[i].epoch), px(i), H - 8);
+      }
+      g.textAlign = 'right';
+      g.fillText('epoch', padL - 8, H - 8);
     }
-    line(recon, pyR, RECON_C);
-    line(kl, pyK, KL_C);
-
-    g.font = '11px ui-monospace, Consolas, monospace';
-    g.fillStyle = RECON_C; g.textAlign = 'left';
-    g.fillText(rMax.toFixed(0), 4, pyR(rMax) + 4);
-    g.fillText(rMin.toFixed(0), 4, pyR(rMin) + 4);
-    g.fillStyle = KL_C; g.textAlign = 'right';
-    g.fillText(kMax.toFixed(1), W - 4, pyK(kMax) + 4);
-    g.fillText(kMin.toFixed(1), W - 4, pyK(kMin) + 4);
-    /* Epoch numbers, thinned to a step that keeps them from colliding: one
-       label per point fits a short run, not a 30-epoch one. The last epoch is
-       always labelled; a regular label too close to it is dropped. */
-    const gap = 10;
-    const spacing = n > 1 ? (W - padL - padR) / (n - 1) : Infinity;
-    const widest = Math.max(...losses.map(r => g.measureText(String(r.epoch)).width));
-    const step = [1, 2, 5, 10, 20, 50, 100, 200, 500].find(s => s * spacing >= widest + gap) || n;
-    const ticks = losses.map((r, i) => i).filter(i => i % step === 0 || i === n - 1)
-      .filter((i, k, all) => i === n - 1 || (n - 1 - i) * spacing >= widest + gap || all.length === 1);
-    g.fillStyle = '#939EA9'; g.strokeStyle = '#C6CDD5'; g.lineWidth = 1;
-    g.textAlign = 'center';
-    for (const i of ticks){
-      g.beginPath(); g.moveTo(px(i), H - padB); g.lineTo(px(i), H - padB + 4); g.stroke();
-      g.fillText(String(losses[i].epoch), px(i), H - 8);
-    }
-    g.textAlign = 'right';
-    g.fillText('epoch', padL - 8, H - 8);
+    draw();
+    resizers.push(draw);
 
     const first = losses[0], last = losses[n - 1];
     const reconDrop = Math.round((1 - last.recon / first.recon) * 100);
@@ -758,10 +796,7 @@ async function main(){
      equally. Both curves come from this model's own schedule; t = 0 is the
      reconstruction term, not a KL term, and is left out. */
   function buildBound(){
-    const c = $('boundChart');
-    if (!c) return;
-    const g = c.getContext('2d');
-    const W = c.width, H = c.height, padL = 46, padR = 16, padT = 16, padB = 26;
+    if (!$('boundChart')) return;
     const ts = [];
     for (let t = 1; t < T; t++) ts.push(t);
     const raw = ts.map(t => sched.beta[t] / (2 * sched.alpha[t] * (1 - sched.alpha_bar[t])));
@@ -769,29 +804,35 @@ async function main(){
     const lam = raw.map(v => v / mean);           // scaled so both curves average 1
     const lgLo = Math.floor(Math.log10(Math.min(...lam))),
           lgHi = Math.ceil(Math.log10(Math.max(...lam)));
-    // x runs noise -> image like the slider: t = T-1 on the left, t = 1 on the right
-    const px = t => padL + (T - 1 - t) / (T - 2) * (W - padL - padR);
-    const py = v => (H - padB) - (Math.log10(v) - lgLo) / (lgHi - lgLo) * (H - padT - padB);
     const BOUND_C = '#B4436C', SIMPLE_C = '#16808E';
 
-    g.clearRect(0, 0, W, H);
-    g.font = '11px ui-monospace, Consolas, monospace';
-    for (let e = lgLo; e <= lgHi; e++){
-      const y = py(10 ** e);
-      g.strokeStyle = '#E3E8ED'; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(padL, y); g.lineTo(W - padR, y); g.stroke();
-      g.fillStyle = '#939EA9'; g.textAlign = 'right';
-      g.fillText(String(+(10 ** e).toPrecision(1)), padL - 6, y + 4);
+    function draw(){
+      const fit = fitCanvas($('boundChart'), 0.25, 170, 240);
+      if (!fit) return;
+      const { g, W, H } = fit, padL = 46, padR = 16, padT = 16, padB = 26;
+      // x runs noise -> image like the slider: t = T-1 on the left, t = 1 on the right
+      const px = t => padL + (T - 1 - t) / (T - 2) * (W - padL - padR);
+      const py = v => (H - padB) - (Math.log10(v) - lgLo) / (lgHi - lgLo) * (H - padT - padB);
+      g.font = '11px ui-monospace, Consolas, monospace';
+      for (let e = lgLo; e <= lgHi; e++){
+        const y = py(10 ** e);
+        g.strokeStyle = '#E3E8ED'; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(padL, y); g.lineTo(W - padR, y); g.stroke();
+        g.fillStyle = '#939EA9'; g.textAlign = 'right';
+        g.fillText(String(+(10 ** e).toPrecision(1)), padL - 6, y + 4);
+      }
+      g.strokeStyle = SIMPLE_C; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(px(T - 1), py(1)); g.lineTo(px(1), py(1)); g.stroke();
+      g.strokeStyle = BOUND_C; g.lineWidth = 2;
+      g.beginPath();
+      ts.forEach((t, k) => k ? g.lineTo(px(t), py(lam[k])) : g.moveTo(px(t), py(lam[k])));
+      g.stroke();
+      g.fillStyle = '#939EA9';
+      g.textAlign = 'left';  g.fillText('t = ' + (T - 1) + ' · noise', padL, H - 8);
+      g.textAlign = 'right'; g.fillText('image · t = 1', W - padR, H - 8);
     }
-    g.strokeStyle = SIMPLE_C; g.lineWidth = 2;
-    g.beginPath(); g.moveTo(px(T - 1), py(1)); g.lineTo(px(1), py(1)); g.stroke();
-    g.strokeStyle = BOUND_C; g.lineWidth = 2;
-    g.beginPath();
-    ts.forEach((t, k) => k ? g.lineTo(px(t), py(lam[k])) : g.moveTo(px(t), py(lam[k])));
-    g.stroke();
-    g.fillStyle = '#939EA9';
-    g.textAlign = 'left';  g.fillText('t = ' + (T - 1) + ' · noise', padL, H - 8);
-    g.textAlign = 'right'; g.fillText('image · t = 1', W - padR, H - 8);
+    draw();
+    resizers.push(draw);
 
     const ratio = Math.round(lam[0] / lam[lam.length - 1]);
     const cross = ts.find((t, k) => lam[k] < 1);
